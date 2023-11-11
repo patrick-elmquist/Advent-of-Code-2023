@@ -1,9 +1,6 @@
 *.iml
 lib/
 build/
-.idea/*
-!.idea/fileTemplates/
-!.idea/file.template.settings.xml
 *.ipr
 *.iws
 out/
@@ -11,3 +8,5 @@ out/
 .gradle
 /local.properties
 .DS_Store
+workspace.xml
+tasks.xml
