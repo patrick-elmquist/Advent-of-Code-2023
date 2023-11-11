@@ -3,6 +3,7 @@ lib/
 build/
 .idea/*
 !.idea/fileTemplates/
+!.idea/file.template.settings.xml
 *.ipr
 *.iws
 out/
