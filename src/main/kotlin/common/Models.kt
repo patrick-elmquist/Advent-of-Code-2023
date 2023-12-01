@@ -42,11 +42,11 @@ class Sheet(val day: Int) {
     var ignorePart2 = false
     val part2 get() = TestBuilder(PartId.Two)
 
-    fun part1(expected: Any? = null, block: (Input) -> Any?) =
-        addPart(PartId.One, expected, block)
+    fun part1(expect: Any? = null, block: (Input) -> Any?) =
+        addPart(PartId.One, expect, block)
 
-    fun part2(expected: Any? = null, block: (Input) -> Any?) =
-        addPart(PartId.Two, expected, block)
+    fun part2(expect: Any? = null, block: (Input) -> Any?) =
+        addPart(PartId.Two, expect, block)
 
     fun breakAfterTest() {
         breakAfterTest = true
