@@ -7,15 +7,6 @@ import common.day
 // answer #2: 66016
 
 fun main() {
-
-    val entryPattern = """(\d+) (\w+)""".toRegex()
-    fun parseMapsOfMaxValues(input: Input) = input.lines.map {
-        entryPattern.findAll(it)
-            .map(MatchResult::destructured)
-            .groupBy { (_, color) -> color }
-            .mapValues { (_, vals) -> vals.maxOf { (count) -> count.toInt() } }
-    }
-
     day(n = 2) {
         part1(expect = 2541) { input ->
             val available = mapOf("red" to 12, "green" to 13, "blue" to 14)
@@ -32,4 +23,12 @@ fun main() {
         }
         part2 test 1 expect 2286
     }
+}
+
+private val pattern = """(\d+) (\w+)""".toRegex()
+private fun parseMapsOfMaxValues(input: Input) = input.lines.map { line ->
+    pattern.findAll(line)
+        .map(MatchResult::destructured)
+        .groupBy { (_, color) -> color }
+        .mapValues { (_, value) -> value.maxOf { (count) -> count.toInt() } }
 }
