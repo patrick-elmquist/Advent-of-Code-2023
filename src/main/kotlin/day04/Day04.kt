@@ -1,5 +1,6 @@
 package day04
 
+import common.Input
 import common.day
 import kotlin.math.pow
 
@@ -8,19 +9,10 @@ import kotlin.math.pow
 
 fun main() {
     day(n = 4) {
-        val pattern = """(\d+)""".toRegex()
         part1 { input ->
-            input.lines.sumOf { line ->
-                val split = line.dropWhile { it != ':' }.drop(1).split(" | ")
-                val winning = pattern.findAll(split[0]).map { it.value }.toSet()
-                val has = pattern.findAll(split[1]).map { it.value }.toSet()
-                val winners = has.intersect(winning)
-                if (winners.isNotEmpty()) {
-                    2f.pow(winners.size - 1).toInt()
-                } else {
-                    0
-                }
-            }
+            parseWinningNumbers(input)
+                .filter { it.isNotEmpty() }
+                .sumOf { 2f.pow(it.size - 1).toInt() }
         }
         verify {
             expect result 28750
@@ -28,22 +20,17 @@ fun main() {
         }
 
         part2 { input ->
-            val counts = IntArray(input.lines.size) { 1 }
-            input.lines.forEachIndexed { index, line ->
-                val split = line.dropWhile { it != ':' }.drop(1).split(" | ")
-                val winning = pattern.findAll(split[0]).map { it.value }.toSet()
-                val has = pattern.findAll(split[1]).map { it.value }.toSet()
-                val winners = has.intersect(winning)
-                if (winners.isNotEmpty()) {
+            parseWinningNumbers(input)
+                .withIndex()
+                .filter { (_, winners) -> winners.isNotEmpty() }
+                .fold(IntArray(input.lines.size) { 1 }) { counts, (index, winners) ->
                     (index + 1..index + winners.size).forEach { i ->
                         if (i in counts.indices) {
                             counts[i] += counts[index]
                         }
                     }
-                }
-            }
-
-            counts.sum()
+                    counts
+                }.sum()
         }
         verify {
             expect result 10212704
@@ -51,3 +38,12 @@ fun main() {
         }
     }
 }
+
+private val regex = """\s+""".toRegex()
+private fun parseWinningNumbers(input: Input): List<Set<Int>> =
+    input.lines.map { line ->
+        val (winning, has) = line
+            .split(":")[1].split("|")
+            .map { it.trim().split(regex).map(String::toInt).toSet() }
+        has.intersect(winning)
+    }
