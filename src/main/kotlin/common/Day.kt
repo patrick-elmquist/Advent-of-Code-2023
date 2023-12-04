@@ -24,8 +24,14 @@ private inline fun collectSolutions(
 private inline fun Sheet.verifyAndRun(input: Input) {
     println("Day $day")
     parts.forEach { part ->
+        val expected = when (part.partId) {
+            PartId.One -> expectPart1
+            PartId.Two -> expectPart2
+        }
+
         val result = part.evaluate(
             input = input,
+            expected = expected,
             testOnly = breakAfterTest,
             tests = tests.filter { it.partId == part.partId }
         )
@@ -43,6 +49,7 @@ private inline fun Sheet.verifyAndRun(input: Input) {
 
 private inline fun Part.evaluate(
     input: Input,
+    expected: Any?,
     testOnly: Boolean,
     tests: List<Test>
 ): Result<Answer> {

@@ -10,11 +10,17 @@ fun main() {
         part1 { input ->
 
         }
-        part1 test 1 expect Unit
+        verify {
+            expect result null
+            run test 1 expect Unit
+        }
 
         part2 { input ->
 
         }
-        part2 test 1 expect Unit
+        verify {
+            expect result null
+            run test 1 expect Unit
+        }
     }
 }

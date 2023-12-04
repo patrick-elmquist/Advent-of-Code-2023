@@ -9,14 +9,17 @@ import common.util.Point
 
 fun main() {
     day(n = 3) {
-        part1(expect = 532445) { input ->
+        part1 { input ->
             val (parts, symbols) = parsePartsAndSymbols(input)
             parts.filter { part -> part.neighbors.any { symbols.containsKey(it) } }
                 .sumOf(Part::value)
         }
-        part1 test 1 expect 4361
+        verify {
+            expect result 532445
+            run test 1 expect 4361
+        }
 
-        part2(expect = 79842967) { input ->
+        part2 { input ->
             val (parts, symbols) = parsePartsAndSymbols(input)
             symbols.filter { (_, symbol) -> symbol == '*' }
                 .keys
@@ -24,7 +27,10 @@ fun main() {
                 .filter { partNumbers -> partNumbers.size == 2 }
                 .sumOf { partNumbers -> partNumbers.reduce(Int::times) }
         }
-        part2 test 1 expect 467835
+        verify {
+            expect result 79842967
+            run test 1 expect 467835
+        }
     }
 }
 
