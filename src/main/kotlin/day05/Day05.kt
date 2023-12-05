@@ -52,9 +52,6 @@ fun main() {
                     start..start+len
                 }
 
-            val
-            seeds
-
             val maps = inputs.drop(1)
                 .map { it ->
                     val converters = it.drop(1)
