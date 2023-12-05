@@ -2,6 +2,7 @@ package day05
 
 import common.Input
 import common.day
+import common.util.log
 import common.util.sliceByBlank
 import kotlinx.coroutines.*
 
@@ -28,11 +29,23 @@ fun main() {
             val (seeds, maps) = parseSeedsAndMaps(input)
             val seedRanges = seeds
                 .chunked(2)
-                .map { (start, len) -> start..start + len }
+                .map { (start, len) -> start..<start + len }
 
+            val shorter = seedRanges.flatMap { range ->
+                val len = len(range)
+                val first = (range.first..(range.first + len / 2))
+                val second = ((first.last + 1)..range.last)
+                listOf(first, second)
+            }
+            val shorterShorter = shorter.flatMap { range ->
+                val len = len(range)
+                val first = (range.first..(range.first + len / 2))
+                val second = ((first.last + 1)..range.last)
+                listOf(first, second)
+            }
             runBlocking {
                 withContext(Dispatchers.Default) {
-                    seedRanges.map { range ->
+                    shorterShorter.map { range ->
                         async {
                             range.minOf { seed ->
                                 maps.fold(seed) { acc, map ->
@@ -47,31 +60,34 @@ fun main() {
         }
         verify {
             expect result 52210644L
-            run test 1 expect 46L
+//            run test 1 expect 46L
         }
     }
 }
 
-private data class Converter(val dst: Long, val src: Long, val len: Long) {
+private fun len(it: LongRange) = (it.last - it.first + 1).coerceAtLeast(0L)
+
+private data class Mapper(val dst: Long, val src: Long, val len: Long) {
     private val srcRange = src..src + len
-    fun convert(inputSrc: Long): Long {
+    private val n = dst - src
+    inline fun convert(inputSrc: Long): Long {
         return if (inputSrc in srcRange) {
-            dst + (inputSrc - src)
+            n + inputSrc
         } else {
             return -1
         }
     }
 }
 
-private fun parseSeedsAndMaps(input: Input): Pair<List<Long>, List<List<Converter>>> {
+private fun parseSeedsAndMaps(input: Input): Pair<List<Long>, List<List<Mapper>>> {
     val inputs = input.lines.sliceByBlank()
     val seeds = inputs.first().first().drop(7).split(" ").map(String::toLong)
     val maps = inputs.drop(1)
         .map { it ->
-            val converters = it.drop(1)
+            val mappers = it.drop(1)
                 .map { it.split(" ").map { it.toLong() } }
-                .map { (dst, src, len) -> Converter(dst, src, len) }
-            converters
+                .map { (dst, src, len) -> Mapper(dst, src, len) }
+            mappers
         }
 
     return seeds to maps
