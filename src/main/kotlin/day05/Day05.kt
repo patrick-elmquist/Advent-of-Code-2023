@@ -2,9 +2,7 @@ package day05
 
 import common.Input
 import common.day
-import common.util.log
 import common.util.sliceByBlank
-import kotlinx.coroutines.*
 
 // answer #1: 340994526
 // answer #2: 52210644
@@ -31,46 +29,64 @@ fun main() {
                 .chunked(2)
                 .map { (start, len) -> start..<start + len }
 
-            val shorter = seedRanges.flatMap { range ->
-                val len = len(range)
-                val first = (range.first..(range.first + len / 2))
-                val second = ((first.last + 1)..range.last)
-                listOf(first, second)
-            }
-            val shorterShorter = shorter.flatMap { range ->
-                val len = len(range)
-                val first = (range.first..(range.first + len / 2))
-                val second = ((first.last + 1)..range.last)
-                listOf(first, second)
-            }
-            runBlocking {
-                withContext(Dispatchers.Default) {
-                    shorterShorter.map { range ->
-                        async {
-                            range.minOf { seed ->
-                                maps.fold(seed) { acc, map ->
-                                    map.firstNotNullOfOrNull { it.convert(acc).takeIf { it >= 0 } }
-                                        ?: acc
-                                }
-                            }
+            val ranges = seedRanges.toMutableList()
+
+            maps.forEach { level ->
+                val queue = ranges.toMutableList()
+                val newRanges = mutableListOf<LongRange>()
+
+                while (queue.isNotEmpty()) {
+                    val range = queue.removeFirst()
+
+                    val mapper = level.firstOrNull { mapper ->
+                        if (range.first in mapper.srcRange) {
+                            true
+                        } else if (range.last in mapper.srcRange) {
+                            true
+                        } else {
+                            false
                         }
-                    }.awaitAll().min()
+                    }
+
+                    if (mapper == null) {
+                        newRanges.add(range)
+                        continue
+                    }
+
+                    if (range.first in mapper.srcRange && range.last in mapper.srcRange) {
+                        newRanges.add(mapper.convert(range.first)..mapper.convert(range.last))
+                    } else if (range.first in mapper.srcRange) {
+                        val newSpan = range.first..mapper.srcRange.last
+                        newRanges.add(mapper.convert(newSpan.first)..mapper.convert(newSpan.last))
+
+                        val toBeProcessed = newSpan.last + 1..range.last
+                        queue.add(toBeProcessed)
+                    } else if (range.last in mapper.srcRange) {
+                        val newSpan = mapper.srcRange.first..range.last
+                        newRanges.add(mapper.convert(newSpan.first)..mapper.convert(newSpan.last))
+
+                        val toBeProcessed = range.first..<mapper.srcRange.first
+                        queue.add(toBeProcessed)
+                    } else {
+                        error("this should not happen")
+                    }
                 }
+                ranges.clear()
+                ranges.addAll(newRanges)
             }
+            ranges.minOf { it.first }
         }
         verify {
             expect result 52210644L
-//            run test 1 expect 46L
+            run test 1 expect 46L
         }
     }
 }
 
-private fun len(it: LongRange) = (it.last - it.first + 1).coerceAtLeast(0L)
-
 private data class Mapper(val dst: Long, val src: Long, val len: Long) {
-    private val srcRange = src..src + len
+    val srcRange = src..<src + len
     private val n = dst - src
-    inline fun convert(inputSrc: Long): Long {
+    fun convert(inputSrc: Long): Long {
         return if (inputSrc in srcRange) {
             n + inputSrc
         } else {
