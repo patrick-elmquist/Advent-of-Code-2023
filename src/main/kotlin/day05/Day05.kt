@@ -8,25 +8,14 @@ import kotlinx.coroutines.*
 // answer #1: 340994526
 // answer #2: 52210644
 
-data class Converter(val dst: Long, val src: Long, val len: Long) {
-    private val srcRange = src..src+len
-    fun convert(inputSrc: Long): Long {
-        return if (inputSrc in srcRange) {
-            dst + (inputSrc - src)
-        } else {
-            return -1
-        }
-    }
-}
-
 fun main() {
     day(n = 5) {
         part1 { input ->
             val (seeds, maps) = parseSeedsAndMaps(input)
             seeds.minOfOrNull { seed ->
-                maps.fold(seed) { acc, converters ->
-                    val result = converters.firstNotNullOfOrNull { it.convert(acc).takeIf { it >= 0 } }
-                    result ?: acc
+                maps.fold(seed) { acc, map ->
+                    map.firstNotNullOfOrNull { it.convert(acc).takeIf { it >= 0 } }
+                        ?: acc
                 }
             }
         }
@@ -36,19 +25,19 @@ fun main() {
         }
 
         part2 { input ->
-            val (seedsSimple, maps) = parseSeedsAndMaps(input)
-            val seeds = seedsSimple
+            val (seeds, maps) = parseSeedsAndMaps(input)
+            val seedRanges = seeds
                 .chunked(2)
-                .map { (start, len) -> start..start+len }
+                .map { (start, len) -> start..start + len }
 
             runBlocking {
                 withContext(Dispatchers.Default) {
-                    seeds.map { range ->
+                    seedRanges.map { range ->
                         async {
                             range.minOf { seed ->
-                                maps.fold(seed) { acc, converters ->
-                                    val result = converters.firstNotNullOfOrNull { it.convert(acc).takeIf { it >= 0 } }
-                                    result ?: acc
+                                maps.fold(seed) { acc, map ->
+                                    map.firstNotNullOfOrNull { it.convert(acc).takeIf { it >= 0 } }
+                                        ?: acc
                                 }
                             }
                         }
@@ -59,6 +48,17 @@ fun main() {
         verify {
             expect result 52210644L
             run test 1 expect 46L
+        }
+    }
+}
+
+private data class Converter(val dst: Long, val src: Long, val len: Long) {
+    private val srcRange = src..src + len
+    fun convert(inputSrc: Long): Long {
+        return if (inputSrc in srcRange) {
+            dst + (inputSrc - src)
+        } else {
+            return -1
         }
     }
 }
