@@ -1,7 +1,7 @@
 package day05
 
+import common.Input
 import common.day
-import common.util.log
 import common.util.sliceByBlank
 import kotlinx.coroutines.*
 
@@ -22,18 +22,9 @@ data class Converter(val dst: Long, val src: Long, val len: Long) {
 fun main() {
     day(n = 5) {
         part1 { input ->
-            val inputs = input.lines.sliceByBlank()
-            val seeds = inputs.first().first().drop(7).split(" ").map(String::toLong)
-            val maps = inputs.drop(1)
-                .mapIndexed { index, it ->
-                    val converters = it.drop(1)
-                        .map { it.split(" ").map { it.toLong() } }
-                        .map { (dst, src, len) -> Converter(dst, src, len) }
-                    index to converters
-                }
-
+            val (seeds, maps) = parseSeedsAndMaps(input)
             seeds.minOfOrNull { seed ->
-                maps.foldIndexed(seed) { _, acc, (_, converters) ->
+                maps.fold(seed) { acc, converters ->
                     val result = converters.firstNotNullOfOrNull { it.convert(acc).takeIf { it >= 0 } }
                     result ?: acc
                 }
@@ -45,20 +36,10 @@ fun main() {
         }
 
         part2 { input ->
-            val inputs = input.lines.sliceByBlank()
-            val seeds = inputs.first().first().drop(7).split(" ").map(String::toLong)
+            val (seedsSimple, maps) = parseSeedsAndMaps(input)
+            val seeds = seedsSimple
                 .chunked(2)
-                .map { (start, len) ->
-                    start..start+len
-                }
-
-            val maps = inputs.drop(1)
-                .map { it ->
-                    val converters = it.drop(1)
-                        .map { it.split(" ").map { it.toLong() } }
-                        .map { (dst, src, len) -> Converter(dst, src, len) }
-                    converters
-                }
+                .map { (start, len) -> start..start+len }
 
             runBlocking {
                 withContext(Dispatchers.Default) {
@@ -80,4 +61,18 @@ fun main() {
             run test 1 expect 46L
         }
     }
+}
+
+private fun parseSeedsAndMaps(input: Input): Pair<List<Long>, List<List<Converter>>> {
+    val inputs = input.lines.sliceByBlank()
+    val seeds = inputs.first().first().drop(7).split(" ").map(String::toLong)
+    val maps = inputs.drop(1)
+        .map { it ->
+            val converters = it.drop(1)
+                .map { it.split(" ").map { it.toLong() } }
+                .map { (dst, src, len) -> Converter(dst, src, len) }
+            converters
+        }
+
+    return seeds to maps
 }
