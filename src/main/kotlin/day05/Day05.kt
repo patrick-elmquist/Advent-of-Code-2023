@@ -3,6 +3,7 @@ package day05
 import common.day
 import common.util.log
 import common.util.sliceByBlank
+import kotlinx.coroutines.*
 
 // answer #1: 340994526
 // answer #2: 52210644
@@ -51,6 +52,9 @@ fun main() {
                     start..start+len
                 }
 
+            val
+            seeds
+
             val maps = inputs.drop(1)
                 .map { it ->
                     val converters = it.drop(1)
@@ -59,12 +63,18 @@ fun main() {
                     converters
                 }
 
-            seeds.minOfOrNull { range ->
-                range.minOf { seed ->
-                    maps.fold(seed) { acc, converters ->
-                        val result = converters.firstNotNullOfOrNull { it.convert(acc).takeIf { it >= 0 } }
-                        result ?: acc
-                    }
+            runBlocking {
+                withContext(Dispatchers.Default) {
+                    seeds.map { range ->
+                        async {
+                            range.minOf { seed ->
+                                maps.fold(seed) { acc, converters ->
+                                    val result = converters.firstNotNullOfOrNull { it.convert(acc).takeIf { it >= 0 } }
+                                    result ?: acc
+                                }
+                            }
+                        }
+                    }.awaitAll().min()
                 }
             }
         }
