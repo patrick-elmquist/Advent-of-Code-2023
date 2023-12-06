@@ -11,23 +11,14 @@ fun main() {
 
         part1 { input ->
             val (times, distances) = input.lines
-                .map { pattern.findAll(it).map(MatchResult::value).map(String::toInt).toList() }
+                .map { pattern.findAll(it).map(MatchResult::value).map(String::toLong).toList() }
 
-            times.zip(distances).map { (time, distance) ->
-                var hold = 0
-                var possible = 0
-                while (hold < time) {
-                    if (hold * (time - hold) > distance) {
-                        possible++
-                    }
-                    hold++
-                }
-                possible
-            }.reduce(Int::times)
+            times.zip(distances).map { (time, distance) -> countPossibleHoldTimes(time, distance) }
+                .reduce(Long::times)
         }
         verify {
-            expect result 449820
-            run test 1 expect 288
+            expect result 449820L
+            run test 1 expect 288L
         }
 
         part2 { input ->
@@ -35,19 +26,21 @@ fun main() {
                 .map { pattern.findAll(it).map(MatchResult::value).joinToString("") }
                 .map(String::toLong)
 
-            var hold = 0L
-            var possible = 0L
-            while (hold < time) {
-                if (hold * (time - hold) > distance) {
-                    possible++
-                }
-                hold++
-            }
-            possible
+            countPossibleHoldTimes(time, distance)
         }
         verify {
             expect result 42250895L
             run test 1 expect 71503L
         }
     }
+}
+
+private fun countPossibleHoldTimes(time: Long, distance: Long): Long {
+    var hold = 0L
+    var possible = 0L
+    while (hold < time) {
+        if (hold * (time - hold) > distance) possible++
+        hold++
+    }
+    return possible
 }
