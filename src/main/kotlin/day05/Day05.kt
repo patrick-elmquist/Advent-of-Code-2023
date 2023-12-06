@@ -38,7 +38,6 @@ fun main() {
                     val range = queue.removeFirst()
 
                     val mapper = level.firstOrNull { mapper -> mapper.intersect(range) }
-
                     when {
                         mapper == null -> movedSeedRanges.add(range)
 
@@ -91,13 +90,8 @@ private data class Mapper(val dst: Long, val srcRange: LongRange) {
         return n + range.first..n + range.last
     }
 
-    fun mapToDst(inputSrc: Long): Long? {
-        return if (inputSrc in srcRange) {
-            n + inputSrc
-        } else {
-            null
-        }
-    }
+    fun mapToDst(inputSrc: Long): Long? =
+        if (inputSrc in srcRange) n + inputSrc else null
 }
 
 private fun parseSeedsAndMaps(input: Input): Pair<List<Long>, List<List<Mapper>>> {
