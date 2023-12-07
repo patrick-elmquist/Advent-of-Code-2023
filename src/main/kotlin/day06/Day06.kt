@@ -1,5 +1,6 @@
 package day06
 
+import common.Input
 import common.day
 
 // answer #1: 449820
@@ -7,13 +8,12 @@ import common.day
 
 fun main() {
     day(n = 6) {
-        val pattern = """(\d+)""".toRegex()
-
         part1 { input ->
-            val (times, distances) = input.lines
-                .map { pattern.findAll(it).map(MatchResult::value).map(String::toLong).toList() }
+            val (times, distances) = mapLinesToNumbers(input)
+                .map { it.map(String::toLong) }
 
-            times.zip(distances).map { (time, distance) -> countPossibleHoldTimes(time, distance) }
+            times.zip(distances)
+                .map { (time, distance) -> countPossibleHoldTimes(time, distance) }
                 .reduce(Long::times)
         }
         verify {
@@ -22,8 +22,8 @@ fun main() {
         }
 
         part2 { input ->
-            val (time, distance) = input.lines
-                .map { pattern.findAll(it).map(MatchResult::value).joinToString("") }
+            val (time, distance) = mapLinesToNumbers(input)
+                .map { it.joinToString("") }
                 .map(String::toLong)
 
             countPossibleHoldTimes(time, distance)
@@ -34,6 +34,10 @@ fun main() {
         }
     }
 }
+
+private val pattern = """(\d+)""".toRegex()
+private fun mapLinesToNumbers(input: Input) =
+    input.lines.map { pattern.findAll(it).map(MatchResult::value) }
 
 private fun countPossibleHoldTimes(time: Long, distance: Long): Long {
     var hold = 0L
