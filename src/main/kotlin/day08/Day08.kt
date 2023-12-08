@@ -21,7 +21,8 @@ fun main() {
 
         part2 { input ->
             val (instructions, mappers) = parseInstructionsAndMappers(input)
-            mappers.keys.filter { it.endsWith('A') }
+            mappers.keys
+                .filter { it.endsWith('A') }
                 .map { start -> findLoopDistance(start, instructions, mappers) }
                 .reduce { acc, distance -> leastCommonMultiple(acc, distance) }
         }
