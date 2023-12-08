@@ -17,6 +17,10 @@ fun leastCommonMultiple(a: Int, b: Int): Int {
     return a * b / greatestCommonDivisor(a, b)
 }
 
+fun leastCommonMultiple(a: Long, b: Long): Long {
+    return a * b / greatestCommonDivisor(a, b)
+}
+
 tailrec fun greatestCommonDivisor(a: Int, b: Int): Int {
     return if (b == 0) a
     else greatestCommonDivisor(b, a % b)
