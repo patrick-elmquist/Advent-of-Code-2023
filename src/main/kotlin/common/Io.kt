@@ -11,7 +11,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.*
 
-private const val PATH_RESOURCES = "./src/main/kotlin/day%s/"
+private const val PATH_RESOURCES = "./inputs/2023/day%s/"
 private const val URL_FORMAT_INPUT = "https://adventofcode.com/2023/day/%d/input"
 private const val FILENAME_FORMAT_INPUT = "input-day-%s.txt"
 private const val FILENAME_FORMAT_TEST = "test-day-%s-%d.txt"
