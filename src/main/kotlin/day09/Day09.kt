@@ -9,7 +9,7 @@ fun main() {
     day(n = 9) {
         part1 { input ->
             input.lines.sumOf { line ->
-                processNumbers(line).reversed()
+                createStepsFromLine(line).reversed()
                     .map { it.last() }
                     .reduce { acc: Int, n -> acc + n }
             }
@@ -21,7 +21,7 @@ fun main() {
 
         part2 { input ->
             input.lines.sumOf { line ->
-                processNumbers(line)
+                createStepsFromLine(line)
                     .reversed()
                     .map { it.first() }
                     .reduce { acc: Int, n -> n - acc }
@@ -34,7 +34,7 @@ fun main() {
     }
 }
 
-private fun processNumbers(line: String): List<List<Int>> {
+private fun createStepsFromLine(line: String): List<List<Int>> {
     val steps = mutableListOf(line.split(" ").map(String::toInt))
     while (steps.last().any { it != 0 }) {
         steps.add(steps.last().windowed(size = 2) { (a, b) -> b - a })
