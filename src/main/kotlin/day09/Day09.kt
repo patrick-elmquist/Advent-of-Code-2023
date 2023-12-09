@@ -12,7 +12,7 @@ fun main() {
                 createStepsFromLine(line)
                     .reversed()
                     .map { it.last() }
-                    .reduce { acc: Int, n -> acc + n }
+                    .reduce { acc, n -> acc + n }
             }
         }
         verify {
@@ -25,7 +25,7 @@ fun main() {
                 createStepsFromLine(line)
                     .reversed()
                     .map { it.first() }
-                    .reduce { acc: Int, n -> n - acc }
+                    .reduce { acc, n -> n - acc }
             }
         }
         verify {
