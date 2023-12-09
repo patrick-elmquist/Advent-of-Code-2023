@@ -4,7 +4,7 @@ import common.day
 import common.util.log
 
 // answer #1: 1702218515
-// answer #2:
+// answer #2: 925
 
 fun main() {
     day(n = 9) {
@@ -18,7 +18,6 @@ fun main() {
                             .windowed(size = 2, step = 1, partialWindows = false) { (a, b) -> b - a }
                     )
                 }
-                steps.forEach { it.log() }
                 steps.reversed().drop(1).map { it.last() }.fold(0) { acc: Int, i: Int ->
                     acc + i
                 }
@@ -30,11 +29,24 @@ fun main() {
         }
 
         part2 { input ->
-
+            input.lines.sumOf { line ->
+                val split = line.split(" ").map(String::toInt)
+                val steps = mutableListOf(split)
+                while (steps.last().any { it != 0 }) {
+                    steps.add(
+                        steps.last()
+                            .windowed(size = 2, step = 1, partialWindows = false) { (a, b) -> b - a }
+                    )
+                }
+                steps.forEach { it.log() }
+                steps.reversed().drop(1).map { it.first() }.fold(0) { acc: Int, i: Int ->
+                    (i - acc).log()
+                }.log()
+            }
         }
         verify {
-            expect result null
-            run test 1 expect Unit
+            expect result 925
+            run test 1 expect 2
         }
     }
 }
