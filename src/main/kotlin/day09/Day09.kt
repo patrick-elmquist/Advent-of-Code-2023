@@ -11,7 +11,7 @@ fun main() {
             input.lines.sumOf { line ->
                 createStepsFromLine(line)
                     .reversed()
-                    .map { it.last() }
+                    .map(List<Int>::last)
                     .reduce { acc, n -> acc + n }
             }
         }
@@ -24,7 +24,7 @@ fun main() {
             input.lines.sumOf { line ->
                 createStepsFromLine(line)
                     .reversed()
-                    .map { it.first() }
+                    .map(List<Int>::first)
                     .reduce { acc, n -> n - acc }
             }
         }
