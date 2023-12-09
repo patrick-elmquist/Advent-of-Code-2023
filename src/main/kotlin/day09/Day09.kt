@@ -9,7 +9,8 @@ fun main() {
     day(n = 9) {
         part1 { input ->
             input.lines.sumOf { line ->
-                createStepsFromLine(line).reversed()
+                createStepsFromLine(line)
+                    .reversed()
                     .map { it.last() }
                     .reduce { acc: Int, n -> acc + n }
             }
