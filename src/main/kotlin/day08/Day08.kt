@@ -40,16 +40,17 @@ private fun findLoopDistance(
 ): Long {
     var current = start
     var counter = 0L
-    do {
+    while (!current.endsWith('Z')) {
         val (left, right) = mappers.getValue(current)
-        val instruction = instructions[(counter % instructions.length.toLong()).toInt()]
+        val index = counter % instructions.length.toLong()
+        val instruction = instructions[index.toInt()]
         current = when (instruction) {
             'L' -> left
             'R' -> right
             else -> error("")
         }
         counter++
-    } while (!current.endsWith('Z'))
+    }
     return counter
 }
 
@@ -57,4 +58,4 @@ val regex = """(\w{3}) = \((\w{3}), (\w{3})\)""".toRegex()
 private fun parseInstructionsAndMappers(input: Input): Pair<String, Map<String, Pair<String, String>>> =
     input.lines.first() to input.lines.drop(2)
         .mapNotNull { line -> regex.matchEntire(line)?.destructured }
-        .associate { line -> line.let { (key, left, right) -> key to Pair(left, right) } }
+        .associate { (key, left, right) -> key to Pair(left, right) }
