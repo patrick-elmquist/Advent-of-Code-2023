@@ -4,7 +4,7 @@ import common.Input
 import common.day
 import common.pointCharMap
 import common.util.Point
-import common.util.neighbors
+import java.util.PriorityQueue
 import kotlin.math.abs
 
 // answer #1: 6682
@@ -14,12 +14,12 @@ fun main() {
     day(n = 10) {
         part1 { input ->
             val (map, start) = parseMapAndStart(input)
-            val queue = mutableListOf(start)
             val path = mutableMapOf(start to 0)
+            val queue = PriorityQueue<Point> { a, b -> path.getValue(a) - path.getValue(b) }
+            queue.add(start)
             while (queue.isNotEmpty()) {
-                val current = queue.minBy { path.getValue(it) }
+                val current = queue.poll()
                 val dist = path.getValue(current)
-                queue.remove(current)
 
                 queue += getPathCandidates(map, current)
                     .filter { it !in path }
@@ -35,19 +35,18 @@ fun main() {
 
         part2 { input ->
             val (map, start) = parseMapAndStart(input)
-            val queue = mutableListOf(start)
             val path = mutableMapOf(start to 0)
+            val queue = PriorityQueue<Point> { a, b -> path.getValue(a) - path.getValue(b) }
+            queue.add(start)
             while (queue.isNotEmpty()) {
-                val current = queue.minBy { path.getValue(it) }
+                val current = queue.poll()
                 val dist = path.getValue(current)
-                queue.remove(current)
 
                 val candidates = getPathCandidates(map, current)
                 if (current == start) {
-                    // This is what makes it take the correct path
-                    val candidate = candidates.first()
-                    path[candidate] = dist + 1
-                    queue += candidate
+                    // Only add first to get loop in order
+                    queue += candidates.first()
+                        .also { path[it] = dist + 1 }
                 } else {
                     queue += candidates
                         .filter { it !in path }
@@ -55,9 +54,9 @@ fun main() {
                 }
             }
 
-            val loop = path.keys.toList()
             // Pick's Theorem
             // A = i + b/2 - 1  <>  i = A - b/2 + 1
+            val loop = path.keys.toList()
             calculateGaussArea(loop) - loop.size / 2 + 1
         }
         verify {
@@ -75,30 +74,31 @@ private fun parseMapAndStart(input: Input): Pair<Map<Point, Char>, Point> {
     return map to start.key
 }
 
+private val left = Point(-1, 0)
+private val right = Point(1, 0)
+private val above = Point(0, -1)
+private val below = Point(0, 1)
 private fun getPathCandidates(
     map: Map<Point, Char>,
-    origin: Point,
+    p: Point,
 ): List<Point> {
-    val (x, y) = origin
-    return when (map[origin]) {
-        '|' -> Point(x, y - 1) to Point(x, y + 1)
-        '-' -> Point(x - 1, y) to Point(x + 1, y)
-        'L' -> Point(x, y - 1) to Point(x + 1, y)
-        'J' -> Point(x, y - 1) to Point(x - 1, y)
-        '7' -> Point(x - 1, y) to Point(x, y + 1)
-        'F' -> Point(x, y + 1) to Point(x + 1, y)
+    return when (map[p]) {
+        '|' -> above to below
+        '-' -> left to right
+        'L' -> above to right
+        'J' -> above to left
+        '7' -> left to below
+        'F' -> below to right
         'S' -> {
-            val (top, left, right, bottom) = origin.neighbors().toList()
             listOfNotNull(
-                left.takeIf { map[left] in listOf('-', 'L', 'F') },
-                bottom.takeIf { map[bottom] in listOf('|', 'L', 'J') },
-                right.takeIf { map[right] in listOf('-', 'J', '7') },
-                top.takeIf { map[top] in listOf('|', '7', 'F') },
+                left.takeIf { map[p + left] in listOf('-', 'L', 'F') },
+                below.takeIf { map[p + below] in listOf('|', 'L', 'J') },
+                right.takeIf { map[p + right] in listOf('-', 'J', '7') },
+                above.takeIf { map[p + above] in listOf('|', '7', 'F') },
             ).let { (a, b) -> a to b }
         }
-
         else -> error("")
-    }.toList()
+    }.toList().map { p + it }
 }
 
 private fun calculateGaussArea(v: List<Point>): Int {
