@@ -11,7 +11,7 @@ import kotlin.math.abs
 fun main() {
     day(n = 11) {
         part1 { input ->
-            calculateDistances(input, n = 1).sum()
+            calculateSumOfDistances(input, expandMultiplier = 1)
         }
         verify {
             expect result 10292708L
@@ -19,7 +19,7 @@ fun main() {
         }
 
         part2 { input ->
-            calculateDistances(input, n = 1_000_000 - 1).sum()
+            calculateSumOfDistances(input, expandMultiplier = 1_000_000 - 1)
         }
         verify {
             expect result 790194712336L
@@ -27,42 +27,29 @@ fun main() {
     }
 }
 
-private fun calculateDistances(input: Input, n: Int): List<Long> {
-    val galaxies = mutableListOf<Point>()
-    input.lines.forEachIndexed { y, row ->
-        row.forEachIndexed { x, c ->
-            if (c == '#') {
-                galaxies.add(Point(x, y))
-            }
-        }
-    }
-    val minX = galaxies.minOf { it.x }
-    val maxX = galaxies.maxOf { it.x }
-    val minY = galaxies.minOf { it.y }
-    val maxY = galaxies.maxOf { it.y }
-
-    val emptyX = (minX..maxX) - galaxies.map { it.x }.toSet()
-    val emptyY = (minY..maxY) - galaxies.map { it.y }.toSet()
-
-    val moved = galaxies.map { galaxy ->
-        val (x, y) = galaxy
-        val offsetX = emptyX.count { it < x } * n
-        val offsetY = emptyY.count { it < y } * n
-        Point(x + offsetX, y + offsetY)
-    }
-
-    val distances = mutableMapOf<Set<Point>, Long>()
-    moved.forEach { a ->
-        moved.forEach { b ->
-            if (b != a) {
-                distances[setOf(a, b)] = a.distance(b)
-            }
+private fun calculateSumOfDistances(input: Input, expandMultiplier: Int): Long {
+    val galaxies = input.lines.flatMapIndexed { y, row ->
+        row.mapIndexedNotNull { x, c ->
+            if (c == '#') Point(x, y) else null
         }
     }
 
-    return distances.values.toList()
+    val minMaxX = galaxies.minOf(Point::x)..galaxies.maxOf(Point::x)
+    val minMaxY = galaxies.minOf(Point::y)..galaxies.maxOf(Point::y)
+
+    val emptyX = minMaxX - galaxies.map(Point::x).toSet()
+    val emptyY = minMaxY - galaxies.map(Point::y).toSet()
+
+    val expanded = galaxies.map { galaxy ->
+        val offsetX = emptyX.count { it < galaxy.x } * expandMultiplier
+        val offsetY = emptyY.count { it < galaxy.y } * expandMultiplier
+        Point(galaxy.x + offsetX, galaxy.y + offsetY)
+    }
+
+    return expanded
+        .flatMap { a -> expanded.map { b -> a.distance(b) } }
+        .sum() / 2
 }
 
-private fun Point.distance(other: Point): Long {
-    return abs(other.x.toLong() - x.toLong()) + abs(other.y.toLong() - y.toLong())
-}
+private fun Point.distance(other: Point): Long =
+    abs(other.x.toLong() - x.toLong()) + abs(other.y.toLong() - y.toLong())
