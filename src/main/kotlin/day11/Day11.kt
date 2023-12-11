@@ -47,9 +47,9 @@ private fun calculateSumOfDistances(input: Input, expandMultiplier: Int): Long {
     }
 
     return expanded
-        .flatMap { a -> expanded.map { b -> a.distance(b) } }
+        .flatMap { a -> expanded.map { b -> a.distance(b).toLong() } }
         .sum() / 2
 }
 
-private fun Point.distance(other: Point): Long =
-    abs(other.x.toLong() - x.toLong()) + abs(other.y.toLong() - y.toLong())
+private fun Point.distance(other: Point): Int =
+    abs(other.x - x) + abs(other.y - y)
