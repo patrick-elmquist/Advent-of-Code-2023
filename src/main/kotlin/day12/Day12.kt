@@ -11,10 +11,7 @@ fun main() {
         part1 { input ->
             parseInput(input)
                 .sumOf { (springs, groups) ->
-                    countCombinations(
-                        springs = springs,
-                        groups = groups
-                    )
+                    countCombinations(springs = springs, groups = groups)
                 }
         }
         verify {
@@ -43,13 +40,9 @@ private fun countCombinations(
     groups: List<Int>,
     memo: MutableMap<Pair<String, List<Int>>, Long> = hashMapOf()
 ): Long {
-    if (groups.isEmpty()) {
-        return if (springs.none { it == '#' }) 1 else 0
-    }
+    if (groups.isEmpty()) return if (springs.none { it == '#' }) 1 else 0
 
-    if (springs.isEmpty()) {
-        return 0
-    }
+    if (springs.isEmpty()) return 0
 
     return memo.getOrPut(springs to groups) {
         val current = springs.first()
@@ -81,10 +74,10 @@ private fun countCombinations(
     }
 }
 
-private fun <T> repeat5Times(block: () -> T): List<T> = generateSequence(block).take(5).toList()
+private fun <T> repeat5Times(block: () -> T): List<T> =
+    generateSequence(block).take(5).toList()
 
-private fun parseInput(input: Input): List<Pair<String, List<Int>>> {
-    return input.lines.map {line ->
-        line.split(" ").let { (a, b) -> a to b.split(",").map(String::toInt) }
-    }
-}
+private fun parseInput(input: Input): List<Pair<String, List<Int>>> =
+    input.lines
+        .map { line -> line.split(" ") }
+        .map { (a, b) -> a to b.split(",").map(String::toInt) }
