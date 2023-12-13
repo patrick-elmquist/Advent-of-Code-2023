@@ -2,55 +2,20 @@ package day13
 
 import common.day
 import common.util.Point
-import common.util.log
 import common.util.sliceByBlank
-import kotlin.math.abs
-import kotlin.math.max
+import kotlin.math.min
 
 // answer #1: 35538
 // answer #2: 30442
 
 fun main() {
     day(n = 13) {
-        fun parseColsAndRows(matrix: List<String>): Pair<List<String>, List<String>> {
-            val cols = (0..<matrix.first().length).map { c ->
-                matrix.map { it[c] }.joinToString("")
-            }
-            return cols to matrix
-        }
-
-        fun solve(matrix: List<String>, excludeRow: Int? = null, excludeCol: Int? = null): Pair<Int, Int> {
-            val (cols, rows) = parseColsAndRows(matrix)
-
-            var left = 0
-            var above = 0
-            for (i in 1..cols.lastIndex) {
-                val diff = cols.foldAt(i)
-                if (diff && i != excludeCol) {
-                    left += i
-                    break
-                }
-            }
-
-            for (i in 1..rows.lastIndex) {
-                val diff = rows.foldAt(i)
-                if (diff && i != excludeRow) {
-                    above += i
-                    break
-                }
-            }
-            return left to above
-        }
-
         part1 { input ->
-            var left = 0
-            var above = 0
-            input.lines.sliceByBlank().forEach { matrix ->
-                val (l, a) = solve(matrix)
-                left += l
-                above += a
+            input.lines.sliceByBlank().fold(0) { acc, pattern ->
+                val (cols, rows) = parseColsAndRows(pattern)
+                val (l, a) = findReflectionDistance(cols, rows)
+                acc + l + a * 100
             }
-            left + above * 100
         }
         verify {
             expect result 35538
@@ -58,77 +23,30 @@ fun main() {
         }
 
         part2 { input ->
-            var left = 0
-            var above = 0
-            input.lines.sliceByBlank().forEachIndexed { index, matrix ->
-                val (cols, rows) = parseColsAndRows(matrix)
-
-                var isRow = false
-                var diffByOnePoint: Point? = null
-                for (i in 1..cols.lastIndex) {
-                    val (perfect, diff) = cols.foldAt2(i)
-                    val (diffByOne, p) = isDiffByOne(i, isRow = false, input = diff)
-                    if (p != null) {
-                        diff.log("m$index col $i p:$perfect:")
-                        diffByOnePoint = p
-                        break
-                    }
-                }
-
-                for (i in 1..rows.lastIndex) {
-                    val (perfect, diff) = rows.foldAt2(i)
-                    val (diffByOne, p) = isDiffByOne(i, isRow = true, input = diff)
-                    if (p != null) {
-                        isRow = true
-                        diff.log("m$index row $i p:$perfect:")
-                        diffByOnePoint = p
-                        break
-                    }
-                }
-
-                val point = diffByOnePoint!!
-                point.log("point")
-                val newMatrix = matrix.mapIndexed { y, row ->
-                    if (isRow) {
+            input.lines.sliceByBlank().fold(0) { acc, pattern ->
+                val (cols, rows) = parseColsAndRows(pattern)
+                val point = findDiffPoint(cols, rows)
+                val (repairedCols, repairedRows) = pattern
+                    .mapIndexed { y, row ->
                         if (y == point.y) {
-                            row.toMutableList().also {
-                                val current = it[point.x]
-                                if (current == '#') {
-                                    it[point.x] = '.'
-                                } else {
-                                    it[point.x] = '#'
-                                }
-                            }.joinToString("")
-                        } else {
-                            row
-                        }
-                    } else {
-                        if (y == point.y) {
-                            row.toMutableList().also {
-                                val current = it[point.x]
-                                if (current == '#') {
-                                    it[point.x] = '.'
-                                } else {
-                                    it[point.x] = '#'
-                                }
-                            }.joinToString("")
+                            row.toMutableList()
+                                .apply { set(point.x, if (get(point.x) == '#') '.' else '#') }
+                                .joinToString("")
                         } else {
                             row
                         }
                     }
-                }
+                    .let { parseColsAndRows(it) }
 
-//                matrix.joinToString("\n").log("matrix\n")
-//                newMatrix.joinToString("\n").log("new\n")
-
-                val (ol, oa) = solve(matrix).log("solve")
-                val (l, a) = solve(newMatrix, excludeCol = ol, excludeRow = oa).log("solve second")
-                left += l.takeIf { it != ol } ?: 0
-                above += a.takeIf { it != oa } ?: 0
-                "left:$left above:$above".log()
+                val (unmodifiedLeft, unmodifiedAbove) = findReflectionDistance(cols, rows)
+                val (l, a) = findReflectionDistance(
+                    cols = repairedCols,
+                    rows = repairedRows,
+                    ignoreLeft = unmodifiedLeft,
+                    ignoreAbove = unmodifiedAbove
+                )
+                acc + l + a * 100
             }
-
-            left + above * 100
         }
         verify {
             expect result 30442
@@ -137,57 +55,62 @@ fun main() {
     }
 }
 
-private fun List<String>.foldAt(index: Int): Boolean {
-    val (left, right) = withIndex().partition { (i, _) -> i < index }
+private fun findReflectionDistance(
+    cols: List<String>,
+    rows: List<String>,
+    ignoreLeft: Int? = null,
+    ignoreAbove: Int? = null,
+): Pair<Int, Int> {
+    for (i in 1..cols.lastIndex) {
+        if (isPerfectMirrorAtIndex(cols, i) && i != ignoreLeft) return i to 0
+    }
+
+    for (i in 1..rows.lastIndex) {
+        if (isPerfectMirrorAtIndex(rows, i) && i != ignoreAbove) return 0 to i
+    }
+
+    error("could not find diff")
+}
+
+private fun isPerfectMirrorAtIndex(pattern: List<String>, index: Int): Boolean {
+    val (left, right) = pattern.withIndex().partition { (i, _) -> i < index }
 
     val count = left.reversed().zip(right)
         .takeWhile { (l, r) -> l.value == r.value }
         .count()
 
-    return count == kotlin.math.min(left.size, right.size)
+    return count == min(left.size, right.size)
 }
 
-private fun List<String>.foldAt2(index: Int): Pair<Boolean, List<List<Int>>> {
-    val (left, right) = withIndex().partition { (i, _) -> i < index }
-
-    val diff = left.reversed().zip(right)
-        .map { (l, r) ->
-            l.value.zip(r.value).map { (a, b) ->
-                if (a == b) {
-                    0
-                } else {
-                    1
-                }
-            }
-
-        }
-
-    val count = left.reversed().zip(right)
-        .takeWhile { (l, r) -> l.value == r.value }
-        .count()
-
-    return Pair(first = (count == kotlin.math.min(left.size, right.size)), second = diff)
+private fun findDiffPoint(
+    cols: List<String>,
+    rows: List<String>,
+) = listOf(cols, rows).firstNotNullOf { range ->
+    (1..range.lastIndex).firstNotNullOfOrNull { i ->
+        findDiffPoint(
+            index = i,
+            isRow = range == rows,
+            input = calculateFoldDiffs(range, i)
+        )
+    }
 }
 
-private fun isDiffByOne(index: Int, isRow: Boolean, input: List<List<Int>>): Pair<Boolean, Point?> {
-    val isOffByOne = (input.sumOf { it.sum() } == 1)
-    if (!isOffByOne) {
-        return false to null
-    }
+private fun calculateFoldDiffs(strings: List<String>, index: Int): List<List<Int>> {
+    val (left, right) = strings.withIndex().partition { (i, _) -> i < index }
+    return left.reversed().zip(right)
+        .map { (l, r) -> l.value.zip(r.value).map { (a, b) -> if (a == b) 0 else 1 } }
+}
 
-//    input.log("input: ")
-    val indexOf = input.indexOfFirst { it.sum() == 1 }//.log("index: ")
-    val indexOfDiff = input[indexOf].indexOfFirst { it == 1 }//.log("indexOfDiff: ")
+private fun findDiffPoint(index: Int, isRow: Boolean, input: List<List<Int>>): Point? {
+    if (input.sumOf { it.sum() } != 1) return null
 
-    val point = if (isRow) {
-        val x = indexOfDiff
-        val y = index - indexOf - 1
-        Point(x, y)
-    } else {
-        val x = index - indexOf - 1
-        val y = indexOfDiff
-        Point(x, y)
-    }
+    val x = input.first { it.sum() == 1 }.indexOfFirst { it == 1 }
+    val y = index - 1 - input.indexOfFirst { it.sum() == 1 }
+    return if (isRow) Point(x, y) else Point(y, x)
+}
 
-    return true to point
+private fun parseColsAndRows(matrix: List<String>): Pair<List<String>, List<String>> {
+    val cols = (0..<matrix.first().length)
+        .map { c -> matrix.map { it[c] }.joinToString("") }
+    return cols to matrix
 }
