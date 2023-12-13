@@ -23,5 +23,5 @@ inline fun <T> T.log(msg: () -> Any): T {
 
 inline fun <T> T.log(msg: String): T {
     if (!loggingEnabled) return this
-    return this.also { println("$msg $it") }
+    return this.also { println("$msg$it") }
 }
