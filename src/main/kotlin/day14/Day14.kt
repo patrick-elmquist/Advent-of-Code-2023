@@ -14,7 +14,7 @@ fun main() {
         part1 { input ->
             val map = input.pointCharMap.toMutableMap()
             val height = input.lines.size
-            solve(map, width = input.lines.first().length, height = input.lines.size)
+            map.tilt(direction = Direction.North)
             calculateValue(map, height)
         }
         verify {
@@ -26,17 +26,13 @@ fun main() {
             val map = input.pointCharMap.toMutableMap()
             val height = input.lines.size
             val seenStates = mutableListOf<Pair<Int, Int>>()
-            var counter = 0
             val n = 1_000_000_000
             val cycle = listOf(Direction.North, Direction.West, Direction.South, Direction.East)
             repeat(n) {
-                cycle
-                    .map { solve(map, width = input.lines.first().length, height = input.lines.size, direction = it) }
-                    .last()
+                cycle.forEach { direction -> map.tilt(direction = direction) }
+
                 val result = calculateValue(map, height)
-                counter++
-                val state = map.hashCode()
-                val key = state to result
+                val key = map.hashCode() to result
                 if (key in seenStates) {
                     seenStates.add(key)
                     val loopDistance = findRepeating(seenStates)
@@ -56,10 +52,10 @@ fun main() {
     }
 }
 
-private class DirectionComparator(private val direction: Direction) : Comparator<Pair<Point, Char>> {
-    override fun compare(o1: Pair<Point, Char>, o2: Pair<Point, Char>): Int {
-        val x = o1.first.x.compareTo(o2.first.x)
-        val y = o1.first.y.compareTo(o2.first.y)
+private class DirectionComparator(private val direction: Direction) : Comparator<Point> {
+    override fun compare(o1: Point, o2: Point): Int {
+        val x = o1.x.compareTo(o2.x)
+        val y = o1.y.compareTo(o2.y)
         return when (direction) {
             Direction.North -> y
             Direction.East -> -x
@@ -69,42 +65,21 @@ private class DirectionComparator(private val direction: Direction) : Comparator
     }
 }
 
-private fun solve(
-    map: MutableMap<Point, Char>,
-    width: Int,
-    height: Int,
-    direction: Direction = Direction.North
-) {
+private fun MutableMap<Point, Char>.tilt(direction: Direction) {
+    val width = maxOf { it.key.x } + 1
+    val height = maxOf { it.key.y } + 1
     val comparator = DirectionComparator(direction)
-    map.filterValues { it == 'O' }
-        .toList()
+    filterValues { it == 'O' }
+        .keys
         .sortedWith(comparator)
-        .forEach { (point, _) ->
-            when (direction) {
-                Direction.North -> {
-                    rollRock(point, map, Direction.North, height, width)
-                }
-
-                Direction.East -> {
-                    rollRock(point, map, Direction.East, height, width)
-                }
-
-                Direction.South -> {
-                    rollRock(point, map, Direction.South, height, width)
-                }
-
-                Direction.West -> {
-                    rollRock(point, map, Direction.West, height, width)
-                }
-            }
-        }
+        .forEach { rock -> moveRock(rock, this, direction, height, width) }
 }
 
 private fun calculateValue(map: MutableMap<Point, Char>, height: Int) =
     map.filterValues { it == 'O' }.entries.toList()
         .sumOf { (point, _) -> height - point.y }
 
-private fun rollRock(point: Point, map: MutableMap<Point, Char>, direction: Direction, height: Int, width: Int) {
+private fun moveRock(point: Point, map: MutableMap<Point, Char>, direction: Direction, height: Int, width: Int) {
     val range = when (direction) {
         Direction.North -> point.y - 1 downTo 0
         Direction.East -> point.x + 1..<width
@@ -131,16 +106,12 @@ private fun rollRock(point: Point, map: MutableMap<Point, Char>, direction: Dire
 
 private val regex = """(.+?)\1+$""".toRegex()
 private fun findRepeating(states: List<Pair<Int, Int>>): List<Pair<Int, Int>> {
-    val copy = states.toMutableList()
-    while (copy.isNotEmpty()) {
-        val string = copy.joinToString(" ") { it.first.toString() }
-        regex.find(string)?.destructured?.let {
-            val result = it.match.groupValues.last().trim().split(" ")
-            if (result.size > 1) {
-                return states.takeLast(result.size)
-            }
+    val string = states.joinToString(" ") { it.first.toString() }
+    regex.find(string)?.destructured?.let {
+        val result = it.match.groupValues.last().trim().split(" ")
+        if (result.size > 1) {
+            return states.takeLast(result.size)
         }
-        copy.removeFirst()
     }
     return emptyList()
 }
