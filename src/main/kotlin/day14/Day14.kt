@@ -3,9 +3,6 @@ package day14
 import common.day
 import common.pointCharMap
 import common.util.Point
-import common.util.log
-import common.util.match
-import io.ktor.client.plugins.*
 
 // answer #1: 108813
 // answer #2: 104533
@@ -16,7 +13,9 @@ fun main() {
     day(n = 14) {
         part1 { input ->
             val map = input.pointCharMap.toMutableMap()
+            val height = input.lines.size
             solve(map, width = input.lines.first().length, height = input.lines.size)
+            calculateValue(map, height)
         }
         verify {
             expect result 108813
@@ -25,13 +24,16 @@ fun main() {
 
         part2 { input ->
             val map = input.pointCharMap.toMutableMap()
+            val height = input.lines.size
             val seenStates = mutableListOf<Pair<Int, Int>>()
             var counter = 0
             val n = 1_000_000_000
+            val cycle = listOf(Direction.North, Direction.West, Direction.South, Direction.East)
             repeat(n) {
-                val result = listOf(Direction.North, Direction.West, Direction.South, Direction.East)
+                cycle
                     .map { solve(map, width = input.lines.first().length, height = input.lines.size, direction = it) }
                     .last()
+                val result = calculateValue(map, height)
                 counter++
                 val state = map.hashCode()
                 val key = state to result
@@ -72,7 +74,7 @@ private fun solve(
     width: Int,
     height: Int,
     direction: Direction = Direction.North
-): Int {
+) {
     val comparator = DirectionComparator(direction)
     map.filterValues { it == 'O' }
         .toList()
@@ -80,49 +82,51 @@ private fun solve(
         .forEach { (point, _) ->
             when (direction) {
                 Direction.North -> {
-                    (point.y - 1 downTo 0)
-                        .takeWhile { map[Point(point.x, it)] == '.' }
-                        .lastOrNull()
-                        ?.let { newY ->
-                            map[point] = '.'
-                            map[Point(point.x, newY)] = 'O'
-                        }
+                    rollRock(point, map, Direction.North, height, width)
                 }
 
                 Direction.East -> {
-                    (point.x + 1..<width)
-                        .takeWhile { map[Point(it, point.y)] == '.' }
-                        .lastOrNull()
-                        ?.let { newX ->
-                            map[point] = '.'
-                            map[Point(newX, point.y)] = 'O'
-                        }
+                    rollRock(point, map, Direction.East, height, width)
                 }
 
                 Direction.South -> {
-                    (point.y + 1..<height)
-                        .takeWhile { map[Point(point.x, it)] == '.' }
-                        .lastOrNull()
-                        ?.let { newY ->
-                            map[point] = '.'
-                            map[Point(point.x, newY)] = 'O'
-                        }
+                    rollRock(point, map, Direction.South, height, width)
                 }
 
                 Direction.West -> {
-                    (point.x - 1 downTo 0)
-                        .takeWhile { map[Point(it, point.y)] == '.' }
-                        .lastOrNull()
-                        ?.let { newX ->
-                            map[point] = '.'
-                            map[Point(newX, point.y)] = 'O'
-                        }
+                    rollRock(point, map, Direction.West, height, width)
                 }
             }
         }
+}
 
-    return map.filterValues { it == 'O' }.entries.toList()
+private fun calculateValue(map: MutableMap<Point, Char>, height: Int) =
+    map.filterValues { it == 'O' }.entries.toList()
         .sumOf { (point, _) -> height - point.y }
+
+private fun rollRock(point: Point, map: MutableMap<Point, Char>, direction: Direction, height: Int, width: Int) {
+    val range = when (direction) {
+        Direction.North -> point.y - 1 downTo 0
+        Direction.East -> point.x + 1..<width
+        Direction.South -> point.y + 1..<height
+        Direction.West -> point.x - 1 downTo 0
+
+    }
+    range.asSequence()
+        .map {
+            when (direction) {
+                Direction.North,
+                Direction.South -> point.copy(y = it)
+                Direction.East,
+                Direction.West -> point.copy(x = it)
+            }
+        }
+        .takeWhile { newPoint -> map[newPoint] == '.' }
+        .lastOrNull()
+        ?.let { newPoint ->
+            map[point] = '.'
+            map[newPoint] = 'O'
+        }
 }
 
 private val regex = """(.+?)\1+$""".toRegex()
