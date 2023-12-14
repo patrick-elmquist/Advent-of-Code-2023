@@ -33,10 +33,10 @@ fun main() {
                 val key = map.hashCode() to result
                 if (key in seenStates) {
                     seenStates.add(key)
-                    val loopDistance = findRepeating(seenStates)
-                    if (loopDistance.isNotEmpty()) {
+                    val loop = findRepeating(seenStates)
+                    if (loop.isNotEmpty()) {
                         val left = n - 1 - (it + 1)
-                        return@part2 loopDistance[left % loopDistance.size].second
+                        return@part2 loop[left % loop.size].second
                     }
                 } else {
                     seenStates.add(key)
