@@ -28,35 +28,24 @@ fun main() {
             val seenStates = mutableListOf<Pair<Int, Int>>()
             var counter = 0
             val n = 1_000_000_000
-            var result = 0
-            var finalResult = 0
             repeat(n) {
-                listOf(Direction.North, Direction.West, Direction.South, Direction.East).forEach {
-                    result = solve(map, width = input.lines.first().length, height = input.lines.size, direction = it)
-                }
+                val result = listOf(Direction.North, Direction.West, Direction.South, Direction.East)
+                    .map { solve(map, width = input.lines.first().length, height = input.lines.size, direction = it) }
+                    .last()
                 counter++
                 val state = map.hashCode()
-                "$counter $state".log()
                 val key = state to result
                 if (key in seenStates) {
                     seenStates.add(key)
                     val loopDistance = findRepeating(seenStates)
                     if (loopDistance.isNotEmpty()) {
-                        val left = n - counter - 1
-                        left.log("left: ")
-                        finalResult = loopDistance[left % loopDistance.size].second
-                        return@part2 finalResult
-//                        TODO("$counter FOUND loop distance $loopDistance")
+                        val left = n - 1 - (it + 1)
+                        return@part2 loopDistance[left % loopDistance.size].second
                     }
                 } else {
                     seenStates.add(key)
                 }
-
-                if (it % 1_000_000 == 0) {
-//                    println(it)
-                }
             }
-            result
         }
         verify {
             expect result 104533
@@ -89,7 +78,6 @@ private fun solve(
         .toList()
         .sortedWith(comparator)
         .forEach { (point, _) ->
-            // add direction
             when (direction) {
                 Direction.North -> {
                     (point.y - 1 downTo 0)
@@ -137,25 +125,11 @@ private fun solve(
         .sumOf { (point, _) -> height - point.y }
 }
 
-private fun Map<Point, Char>.print() {
-    val minMaxX: IntRange = minOf { it.key.x }..maxOf { it.key.x }
-    val minMaxY: IntRange = minOf { it.key.y }..maxOf { it.key.y }
-
-    for (y in minMaxY) {
-        for (x in minMaxX) {
-            print(this[Point(x, y)])
-        }
-        println()
-    }
-    println()
-}
-
+private val regex = """(.+?)\1+$""".toRegex()
 private fun findRepeating(states: List<Pair<Int, Int>>): List<Pair<Int, Int>> {
-    val regex = """(.+?)\1+$""".toRegex()
     val copy = states.toMutableList()
     while (copy.isNotEmpty()) {
         val string = copy.joinToString(" ") { it.first.toString() }
-
         regex.find(string)?.destructured?.let {
             val result = it.match.groupValues.last().trim().split(" ")
             if (result.size > 1) {
@@ -164,6 +138,5 @@ private fun findRepeating(states: List<Pair<Int, Int>>): List<Pair<Int, Int>> {
         }
         copy.removeFirst()
     }
-
     return emptyList()
 }
