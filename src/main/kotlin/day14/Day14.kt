@@ -7,8 +7,6 @@ import common.util.Point
 // answer #1: 108813
 // answer #2: 104533
 
-private enum class Direction { North, East, South, West }
-
 fun main() {
     day(n = 14) {
         part1 { input ->
@@ -51,6 +49,8 @@ fun main() {
         }
     }
 }
+
+private enum class Direction { North, East, South, West }
 
 private class DirectionComparator(private val direction: Direction) : Comparator<Point> {
     override fun compare(o1: Point, o2: Point): Int {
