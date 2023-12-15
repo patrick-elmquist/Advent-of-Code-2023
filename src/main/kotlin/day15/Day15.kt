@@ -1,7 +1,6 @@
 package day15
 
 import common.day
-import java.util.*
 
 // answer #1: 502139
 // answer #2: 284132
@@ -17,35 +16,26 @@ fun main() {
         }
 
         part2 { input ->
-            val boxes = List(256) { LinkedList<Pair<String, String>>() }
+            val boxes = List(256) { mutableMapOf<String, String>() }
             input.lines.first().split(",").forEach { step ->
+                val (label, focalLength) = step.split("=", "-")
+                val box = boxes[hash(label)]
                 when {
-                    '-' in step -> {
-                        val label = step.dropLast(1)
-                        val content = boxes[hash(label)]
-                        val index = content.indexOfFirst { it.first == label }
-                        if (index >= 0) content.removeAt(index)
-                    }
+                    '-' in step -> box.remove(label)
+                    '=' in step -> box.merge(label, focalLength) { _, b -> b }
+                }
+            }
 
-                    '=' in step -> {
-                        val (label, focalLength) = step.split("=")
-                        val content = boxes[hash(label)]
-                        val index = content.indexOfFirst { it.first == label }
-                        if (index >= 0) {
-                            content[index] = label to focalLength
-                        } else {
-                            content.add(label to focalLength)
+            boxes
+                .map { lenses ->
+                    lenses.values
+                        .withIndex()
+                        .sumOf { (indexInBox, focalLength) ->
+                            (indexInBox + 1) * focalLength.toInt()
                         }
-                    }
                 }
-            }
-
-            boxes.withIndex().sumOf { (boxIndex, lenses) ->
-                val sum = lenses.withIndex().sumOf { (indexInBox, entry) ->
-                    (indexInBox + 1) * entry.second.toInt()
-                }
-                (boxIndex + 1) * sum
-            }
+                .withIndex()
+                .sumOf { (boxIndex, focalLengthSum) -> (boxIndex + 1) * focalLengthSum }
         }
         verify {
             expect result 284132
