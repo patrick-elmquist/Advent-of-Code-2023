@@ -44,4 +44,5 @@ fun main() {
     }
 }
 
-private fun hash(it: String) = it.fold(0) { current, c -> (current + c.code) * 17 % 256 }
+private fun hash(label: String): Int =
+    label.fold(0) { current, c -> (current + c.code) * 17 % 256 }
