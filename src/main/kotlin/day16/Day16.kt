@@ -2,18 +2,19 @@ package day16
 
 import common.day
 import common.pointCharMap
-import common.util.Point
+import common.util.*
 
 // answer #1: 7067
 // answer #2: 7324
 
-private enum class Direction { Left, Up, Right, Down }
-
 fun main() {
     day(n = 16) {
         part1 { input ->
-            val map = input.pointCharMap
-            map.calculateEnergy(start = Point(x = 0, y = 0), startDirection = Direction.Right)
+            countEnergizedTiles(
+                map = input.pointCharMap,
+                initPoint = Point(0, 0),
+                initDirection = Direction.Right
+            )
         }
         verify {
             expect result 7067
@@ -33,7 +34,11 @@ fun main() {
             ).flatten()
 
             startingStates.maxOf { (start, startDirection) ->
-                map.calculateEnergy(start = start, startDirection = startDirection)
+                countEnergizedTiles(
+                    map = map,
+                    initPoint = start,
+                    initDirection = startDirection
+                )
             }
         }
         verify {
@@ -43,57 +48,47 @@ fun main() {
     }
 }
 
-private fun Map<Point, Char>.calculateEnergy(
-    start: Point,
-    startDirection: Direction,
+private fun countEnergizedTiles(
+    map: Map<Point, Char>,
+    initPoint: Point,
+    initDirection: Direction,
 ): Int {
-    val xRange = minOf { it.key.x }..maxOf { it.key.x }
-    val yRange = minOf { it.key.y }..maxOf { it.key.y }
-    val beams = mutableListOf(start to startDirection)
-    val energized = mutableSetOf<Point>()
-    val memo = mutableSetOf<Pair<Point, Direction>>()
+    val beams = mutableListOf(initPoint to initDirection)
+    val seenStates = mutableSetOf<Pair<Point, Direction>>()
     while (beams.isNotEmpty()) {
         val (point, direction) = beams.removeFirst()
-        beams += followBeam(
-            p = point,
-            d = direction,
-            energized = energized,
-            map = this,
-            xRange = xRange,
-            yRange = yRange,
-            memo = memo,
+        beams += map.followBeam(
+            fromPoint = point,
+            fromDirection = direction,
+            seenStates = seenStates,
         )
     }
-    return keys.count { it in energized }
+    return seenStates.distinctBy { it.first }.size
 }
 
-private fun followBeam(
-    p: Point,
-    d: Direction,
-    energized: MutableSet<Point>,
-    map: Map<Point, Char>,
-    memo: MutableSet<Pair<Point, Direction>>,
-    xRange: IntRange,
-    yRange: IntRange,
+private fun Map<Point, Char>.followBeam(
+    fromPoint: Point,
+    fromDirection: Direction,
+    seenStates: MutableSet<Pair<Point, Direction>>,
 ): List<Pair<Point, Direction>> {
     val splitBeams = mutableListOf<Pair<Point, Direction>>()
-    var current = p to d
-    while (current.first.let { it.x in xRange && it.y in yRange }) {
+    var current = fromPoint to fromDirection
+    while (current.first in this) {
         val (point, direction) = current
 
-        if (current in memo) {
+        if (current in seenStates) {
             break
         }
 
-        memo += current
-        energized += point
+        seenStates += current
 
-        val tile = map.getValue(point)
-        val isHorizontal = direction in setOf(Direction.Left, Direction.Right)
-        val isVertical = direction in setOf(Direction.Up, Direction.Down)
-        val proceed = tile == '.' || tile == '-' && isHorizontal || tile == '|' && isVertical
-        val directionOfNextTile = when {
-            proceed -> direction
+        val tile = getValue(point)
+        val canContinueForward = tile == '.' ||
+                tile == '-' && direction.isHorizontal ||
+                tile == '|' && direction.isVertical
+
+        val newDirection = when {
+            canContinueForward -> direction
 
             tile == '\\' -> when (direction) {
                 Direction.Left -> Direction.Up
@@ -109,16 +104,16 @@ private fun followBeam(
                 Direction.Down -> Direction.Left
             }
 
-            tile == '-' && isVertical -> {
-                if (point.x - 1 in xRange) {
-                    splitBeams += point.copy(x = point.x - 1) to Direction.Left
+            tile == '-' && direction.isVertical -> {
+                if (point.leftNeighbour in this) {
+                    splitBeams += point.leftNeighbour to Direction.Left
                 }
                 Direction.Right
             }
 
-            tile == '|' && isHorizontal -> {
-                if (point.y - 1 in yRange) {
-                    splitBeams += point.copy(y = point.y - 1) to Direction.Up
+            tile == '|' && direction.isHorizontal -> {
+                if (point.aboveNeighbour in this) {
+                    splitBeams += point.aboveNeighbour to Direction.Up
                 }
                 Direction.Down
             }
@@ -126,12 +121,7 @@ private fun followBeam(
             else -> error("$point $direction")
         }
 
-        current = when (directionOfNextTile) {
-            Direction.Left -> point.copy(x = point.x - 1)
-            Direction.Up -> point.copy(y = point.y - 1)
-            Direction.Right -> point.copy(x = point.x + 1)
-            Direction.Down -> point.copy(y = point.y + 1)
-        } to directionOfNextTile
+        current = point.neighborInDirection(newDirection) to newDirection
     }
 
     return splitBeams

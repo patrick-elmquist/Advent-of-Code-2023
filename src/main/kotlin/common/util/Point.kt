@@ -21,6 +21,27 @@ data class Point3D(val x: Int, val y: Int, val z: Int) {
     companion object
 }
 
+val Point.leftNeighbour: Point
+    get() = copy(x = x - 1)
+
+val Point.rightNeighbour: Point
+    get() = copy(x = x + 1)
+
+val Point.aboveNeighbour: Point
+    get() = copy(y = y - 1)
+
+val Point.belowNeighbour: Point
+    get() = copy(y = y + 1)
+
+fun Point.neighborInDirection(direction: Direction): Point {
+    return when (direction) {
+        Direction.Left -> leftNeighbour
+        Direction.Up -> aboveNeighbour
+        Direction.Right -> rightNeighbour
+        Direction.Down -> belowNeighbour
+    }
+}
+
 fun Point.neighbors(
     diagonal: Boolean = false,
     includeSelf: Boolean = false
