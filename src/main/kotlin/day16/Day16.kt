@@ -76,7 +76,7 @@ private fun followBeam(
     xRange: IntRange,
     yRange: IntRange,
 ): List<Pair<Point, Direction>> {
-    val beams = mutableListOf<Pair<Point, Direction>>()
+    val splitBeams = mutableListOf<Pair<Point, Direction>>()
     var current = p to d
     while (current.first.let { it.x in xRange && it.y in yRange }) {
         val (point, direction) = current
@@ -91,42 +91,36 @@ private fun followBeam(
         val tile = map.getValue(point)
         val isHorizontal = direction in setOf(Direction.Left, Direction.Right)
         val isVertical = direction in setOf(Direction.Up, Direction.Down)
+        val proceed = tile == '.' || tile == '-' && isHorizontal || tile == '|' && isVertical
         val directionOfNextTile = when {
-            tile == '.' || tile == '-' && isHorizontal || tile == '|' && isVertical -> {
-                direction
+            proceed -> direction
+
+            tile == '\\' -> when (direction) {
+                Direction.Left -> Direction.Up
+                Direction.Up -> Direction.Left
+                Direction.Right -> Direction.Down
+                Direction.Down -> Direction.Right
             }
 
-            tile == '\\' -> {
-                when (direction) {
-                    Direction.Left -> Direction.Up
-                    Direction.Up -> Direction.Left
-                    Direction.Right -> Direction.Down
-                    Direction.Down -> Direction.Right
-                }
+            tile == '/' -> when (direction) {
+                Direction.Left -> Direction.Down
+                Direction.Up -> Direction.Right
+                Direction.Right -> Direction.Up
+                Direction.Down -> Direction.Left
             }
 
-            tile == '/' -> {
-                when (direction) {
-                    Direction.Left -> Direction.Down
-                    Direction.Up -> Direction.Right
-                    Direction.Right -> Direction.Up
-                    Direction.Down -> Direction.Left
+            tile == '-' && isVertical -> {
+                if (point.x - 1 in xRange) {
+                    splitBeams += point.copy(x = point.x - 1) to Direction.Left
                 }
+                Direction.Right
             }
 
             tile == '|' && isHorizontal -> {
                 if (point.y - 1 in yRange) {
-                    beams += point.copy(y = point.y - 1) to Direction.Up
+                    splitBeams += point.copy(y = point.y - 1) to Direction.Up
                 }
                 Direction.Down
-            }
-
-
-            tile == '-' && isVertical -> {
-                if (point.x - 1 in xRange) {
-                    beams += point.copy(x = point.x - 1) to Direction.Left
-                }
-                Direction.Right
             }
 
             else -> error("$point $direction")
@@ -139,5 +133,6 @@ private fun followBeam(
             Direction.Down -> point.copy(y = point.y + 1)
         } to directionOfNextTile
     }
-    return beams
+
+    return splitBeams
 }
