@@ -8,78 +8,35 @@ import java.util.*
 // answer #1: 755
 // answer #2: 881
 
-data class Node(
-    val point: Point,
-    val direction: Direction,
-    val steps: Int,
-    val heatLoss: Int,
-)
-
 fun main() {
     day(n = 17) {
         part1 { input ->
-            val lines = input.lines
-            val map = input.pointCharMap.mapValues { it.value.digitToInt() }
-
-            val start = Point(x = 0, y = 0)
-            val end = Point(x = lines.first().lastIndex, y = lines.lastIndex).log()
-
+            val city = input.pointCharMap.mapValues { it.value.digitToInt() }
+            val end = Point(x = city.maxOf { it.key.x }, y = city.maxOf { it.key.y })
             val visited = mutableSetOf<Triple<Point, Direction, Int>>()
-            val queue = PriorityQueue<Node>(compareBy { it.heatLoss })
-            queue.add(
-                Node(
-                    point = start.rightNeighbour,
-                    direction = Direction.Right,
-                    steps = 1,
-                    heatLoss = map.getValue(start.rightNeighbour),
-                ),
-            )
-            queue.add(
-                Node(
-                    point = start.belowNeighbour,
-                    direction = Direction.Down,
-                    steps = 1,
-                    heatLoss = map.getValue(start.belowNeighbour),
-                ),
-            )
+            val queue = initPriorityQueue(city)
 
             while (queue.isNotEmpty()) {
                 val node = queue.poll()
 
-                if (node.point == end) {
-                    return@part1 node.heatLoss
-                }
-
-                val key = Triple(node.point, node.direction, node.steps)
-                if (key in visited) {
-                    continue
-                }
-
-                visited += key
-                if (node.steps < 3) {
-                    val nextPoint = node.point.neighborInDirection(node.direction)
-                    if (nextPoint in map) {
-                        queue.add(
-                            Node(
-                                point = nextPoint,
-                                direction = node.direction,
-                                steps = node.steps + 1,
-                                heatLoss = node.heatLoss + map.getValue(nextPoint)
-                            )
-                        )
-                    }
-                }
-                listOf(node.direction.nextCW, node.direction.nextCCW).forEach { newDir ->
-                    val newPoint = node.point.neighborInDirection(newDir)
-                    if (newPoint in map) {
-                        queue.add(
-                            Node(
-                                point = newPoint,
-                                direction = newDir,
-                                steps = 1,
-                                heatLoss = node.heatLoss + map.getValue(newPoint)
-                            )
-                        )
+                if (node.point == end) return@part1 node.heatLoss
+                if (node.visitKey !in visited) {
+                    visited += node.visitKey
+                    queue += listOfNotNull(
+                        node.direction.takeIf { node.steps < 3 },
+                        node.direction.nextCW,
+                        node.direction.nextCCW,
+                    ).mapNotNull { dir ->
+                        node.point.nextInDirection(dir)
+                            .takeIf { point -> point in city }
+                            ?.let { point ->
+                                Node(
+                                    point = point,
+                                    direction = dir,
+                                    steps = if (dir == node.direction) node.steps + 1 else 1,
+                                    heatLoss = node.heatLoss + city.getValue(point)
+                                )
+                            }
                     }
                 }
             }
@@ -92,105 +49,42 @@ fun main() {
         }
 
         part2 { input ->
-
-            fun Node.hasToTurn() = steps == 10
-            fun Node.mustContinue() = steps < 4
-
-            val lines = input.lines
-            val map = input.pointCharMap.mapValues { it.value.digitToInt() }
-
-            val start = Point(x = 0, y = 0)
-            val end = Point(x = lines.first().lastIndex, y = lines.lastIndex).log()
-
+            val city = input.pointCharMap.mapValues { it.value.digitToInt() }
+            val end = Point(x = city.maxOf { it.key.x }, y = city.maxOf { it.key.y })
             val visited = mutableSetOf<Triple<Point, Direction, Int>>()
-            val queue = PriorityQueue<Node>(compareBy { it.heatLoss })
-            queue.add(
-                Node(
-                    point = start.rightNeighbour,
-                    direction = Direction.Right,
-                    steps = 1,
-                    heatLoss = map.getValue(start.rightNeighbour),
-                ),
-            )
-            queue.add(
-                Node(
-                    point = start.belowNeighbour,
-                    direction = Direction.Down,
-                    steps = 1,
-                    heatLoss = map.getValue(start.belowNeighbour),
-                ),
-            )
+            val queue = initPriorityQueue(city)
 
             while (queue.isNotEmpty()) {
                 val node = queue.poll()
 
-                if (node.point == end) {
-                    return@part2 node.heatLoss
-                }
+                if (node.point == end) return@part2 node.heatLoss
+                if (node.visitKey in visited) continue
+                visited += node.visitKey
 
-                val key = Triple(node.point, node.direction, node.steps)
-                if (key in visited) {
-                    continue
-                }
-
-                visited += key
-                if (node.mustContinue()) {
-                    val nextPoint = node.point.neighborInDirection(node.direction)
-                    queue.add(
-                        Node(
-                            point = nextPoint,
-                            direction = node.direction,
-                            steps = node.steps + 1,
-                            heatLoss = node.heatLoss + map.getValue(nextPoint)
-                        )
-                    )
-                } else if (node.hasToTurn()) {
-                    listOf(node.direction.nextCW, node.direction.nextCCW).forEach { newDir ->
-                        val newPoint = node.point.neighborInDirection(newDir)
-                        if (newPoint in map ) {
-                            var distanceCheck = newPoint
-                            repeat(3) { distanceCheck = distanceCheck.neighborInDirection(newDir)}
-                            if (distanceCheck in map) {
-                                queue.add(
-                                    Node(
-                                        point = newPoint,
-                                        direction = newDir,
-                                        steps = 1,
-                                        heatLoss = node.heatLoss + map.getValue(newPoint)
-                                    )
-                                )
-                            }
-                        }
-                    }
-                } else {
-                    val nextPoint = node.point.neighborInDirection(node.direction)
-                    if (nextPoint in map) {
-                        queue.add(
+                if (node.steps in 0..9) {
+                    queue += listOf(node.point.nextInDirection(node.direction))
+                        .filter { it in city }
+                        .map { point ->
                             Node(
-                                point = nextPoint,
+                                point = point,
                                 direction = node.direction,
                                 steps = node.steps + 1,
-                                heatLoss = node.heatLoss + map.getValue(nextPoint)
+                                heatLoss = node.heatLoss + city.getValue(point)
                             )
-                        )
-                    }
-                    listOf(node.direction.nextCW, node.direction.nextCCW).forEach { newDir ->
-                        val newPoint = node.point.neighborInDirection(newDir)
-                        if (newPoint in map ) {
-                            var distanceCheck = newPoint
-                            repeat(3) { distanceCheck = distanceCheck.neighborInDirection(newDir)}
-                            if (distanceCheck in map) {
-                                queue.add(
-                                    Node(
-                                        point = newPoint,
-                                        direction = newDir,
-                                        steps = 1,
-                                        heatLoss = node.heatLoss + map.getValue(newPoint)
-                                    )
-                                )
-                            }
                         }
-                    }
+                }
+                if (node.steps > 3) {
+                    queue += listOf(node.direction.nextCW, node.direction.nextCCW)
+                        .filter { dir -> node.point.nextInDirection(dir, steps = 4) in city }
+                        .map { dir ->
+                            val newPoint = node.point.nextInDirection(dir)
+                            Node(
+                                point = newPoint,
+                                direction = dir,
+                                steps = 1,
+                                heatLoss = node.heatLoss + city.getValue(newPoint)
+                            )
+                        }
                 }
             }
         }
@@ -199,5 +93,36 @@ fun main() {
             run test 1 expect 94
             run test 4 expect 71
         }
+    }
+}
+
+private data class Node(
+    val point: Point,
+    val direction: Direction,
+    val steps: Int,
+    val heatLoss: Int,
+) {
+    val visitKey = Triple(point, direction, steps)
+}
+
+private fun initPriorityQueue(map: Map<Point, Int>): PriorityQueue<Node> {
+    val start = Point(x = 0, y = 0)
+    return PriorityQueue(compareBy(Node::heatLoss)).apply {
+        add(
+            Node(
+                point = start.rightNeighbour,
+                direction = Direction.Right,
+                steps = 1,
+                heatLoss = map.getValue(start.rightNeighbour),
+            ),
+        )
+        add(
+            Node(
+                point = start.belowNeighbour,
+                direction = Direction.Down,
+                steps = 1,
+                heatLoss = map.getValue(start.belowNeighbour),
+            ),
+        )
     }
 }

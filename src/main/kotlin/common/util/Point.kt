@@ -33,12 +33,12 @@ val Point.aboveNeighbour: Point
 val Point.belowNeighbour: Point
     get() = copy(y = y + 1)
 
-fun Point.neighborInDirection(direction: Direction): Point =
+fun Point.nextInDirection(direction: Direction, steps: Int = 1): Point =
     when (direction) {
-        Direction.Left -> leftNeighbour
-        Direction.Up -> aboveNeighbour
-        Direction.Right -> rightNeighbour
-        Direction.Down -> belowNeighbour
+        Direction.Left -> copy(x = x - steps)
+        Direction.Up -> copy(y = y - steps)
+        Direction.Right -> copy(x = x + steps)
+        Direction.Down -> copy(y = y + steps)
     }
 
 fun Point.neighbors(

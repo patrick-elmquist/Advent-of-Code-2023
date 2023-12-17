@@ -112,7 +112,7 @@ private fun Map<Point, Char>.traceBeam(
             else -> error("$point $direction")
         }
 
-        current = point.neighborInDirection(nextDirection) to nextDirection
+        current = point.nextInDirection(nextDirection) to nextDirection
     }
 
     return splitBeams
