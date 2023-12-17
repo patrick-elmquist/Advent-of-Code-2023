@@ -7,13 +7,14 @@ import common.util.*
 // answer #1: 7067
 // answer #2: 7324
 
+private typealias Beam = Pair<Point, Direction>
+
 fun main() {
     day(n = 16) {
         part1 { input ->
             countEnergizedTiles(
                 map = input.pointCharMap,
-                initPoint = Point(0, 0),
-                initDirection = Direction.Right
+                origin = Point(0, 0) to Direction.Right,
             )
         }
         verify {
@@ -33,13 +34,7 @@ fun main() {
                 points.filter { it.x == lastColIndex }.map { it to Direction.Left }
             ).flatten()
 
-            startingStates.maxOf { (start, startDirection) ->
-                countEnergizedTiles(
-                    map = map,
-                    initPoint = start,
-                    initDirection = startDirection
-                )
-            }
+            startingStates.maxOf { beam -> countEnergizedTiles(beam, map) }
         }
         verify {
             expect result 7324
@@ -49,30 +44,26 @@ fun main() {
 }
 
 private fun countEnergizedTiles(
-    map: Map<Point, Char>,
-    initPoint: Point,
-    initDirection: Direction,
+    origin: Beam,
+    map: Map<Point, Char>
 ): Int {
-    val beams = mutableListOf(initPoint to initDirection)
-    val seenStates = mutableSetOf<Pair<Point, Direction>>()
+    val beams = mutableListOf(origin)
+    val seenStates = mutableSetOf<Beam>()
     while (beams.isNotEmpty()) {
-        val (point, direction) = beams.removeFirst()
-        beams += map.followBeam(
-            fromPoint = point,
-            fromDirection = direction,
+        beams += map.traceBeam(
+            beam = beams.removeFirst(),
             seenStates = seenStates,
         )
     }
     return seenStates.distinctBy { it.first }.size
 }
 
-private fun Map<Point, Char>.followBeam(
-    fromPoint: Point,
-    fromDirection: Direction,
-    seenStates: MutableSet<Pair<Point, Direction>>,
-): List<Pair<Point, Direction>> {
-    val splitBeams = mutableListOf<Pair<Point, Direction>>()
-    var current = fromPoint to fromDirection
+private fun Map<Point, Char>.traceBeam(
+    beam: Beam,
+    seenStates: MutableSet<Beam>
+): List<Beam> {
+    val splitBeams = mutableListOf<Beam>()
+    var current = beam
     while (current.first in this) {
         val (point, direction) = current
 
@@ -87,7 +78,7 @@ private fun Map<Point, Char>.followBeam(
                 tile == '-' && direction.isHorizontal ||
                 tile == '|' && direction.isVertical
 
-        val newDirection = when {
+        val nextDirection = when {
             canContinueForward -> direction
 
             tile == '\\' -> when (direction) {
@@ -121,8 +112,9 @@ private fun Map<Point, Char>.followBeam(
             else -> error("$point $direction")
         }
 
-        current = point.neighborInDirection(newDirection) to newDirection
+        current = point.neighborInDirection(nextDirection) to nextDirection
     }
 
     return splitBeams
 }
+

@@ -33,14 +33,13 @@ val Point.aboveNeighbour: Point
 val Point.belowNeighbour: Point
     get() = copy(y = y + 1)
 
-fun Point.neighborInDirection(direction: Direction): Point {
-    return when (direction) {
+fun Point.neighborInDirection(direction: Direction): Point =
+    when (direction) {
         Direction.Left -> leftNeighbour
         Direction.Up -> aboveNeighbour
         Direction.Right -> rightNeighbour
         Direction.Down -> belowNeighbour
     }
-}
 
 fun Point.neighbors(
     diagonal: Boolean = false,
