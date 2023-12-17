@@ -6,7 +6,7 @@ import common.util.*
 import java.util.*
 
 // answer #1: 755
-// answer #2:
+// answer #2: 881
 
 data class Node(
     val point: Point,
@@ -92,6 +92,10 @@ fun main() {
         }
 
         part2 { input ->
+
+            fun Node.hasToTurn() = steps == 10
+            fun Node.mustContinue() = steps < 4
+
             val lines = input.lines
             val map = input.pointCharMap.mapValues { it.value.digitToInt() }
 
@@ -130,7 +134,35 @@ fun main() {
                 }
 
                 visited += key
-                if (node.steps < 3) {
+                if (node.mustContinue()) {
+                    val nextPoint = node.point.neighborInDirection(node.direction)
+                    queue.add(
+                        Node(
+                            point = nextPoint,
+                            direction = node.direction,
+                            steps = node.steps + 1,
+                            heatLoss = node.heatLoss + map.getValue(nextPoint)
+                        )
+                    )
+                } else if (node.hasToTurn()) {
+                    listOf(node.direction.nextCW, node.direction.nextCCW).forEach { newDir ->
+                        val newPoint = node.point.neighborInDirection(newDir)
+                        if (newPoint in map ) {
+                            var distanceCheck = newPoint
+                            repeat(3) { distanceCheck = distanceCheck.neighborInDirection(newDir)}
+                            if (distanceCheck in map) {
+                                queue.add(
+                                    Node(
+                                        point = newPoint,
+                                        direction = newDir,
+                                        steps = 1,
+                                        heatLoss = node.heatLoss + map.getValue(newPoint)
+                                    )
+                                )
+                            }
+                        }
+                    }
+                } else {
                     val nextPoint = node.point.neighborInDirection(node.direction)
                     if (nextPoint in map) {
                         queue.add(
@@ -142,24 +174,28 @@ fun main() {
                             )
                         )
                     }
-                }
-                listOf(node.direction.nextCW, node.direction.nextCCW).forEach { newDir ->
-                    val newPoint = node.point.neighborInDirection(newDir)
-                    if (newPoint in map) {
-                        queue.add(
-                            Node(
-                                point = newPoint,
-                                direction = newDir,
-                                steps = 1,
-                                heatLoss = node.heatLoss + map.getValue(newPoint)
-                            )
-                        )
+                    listOf(node.direction.nextCW, node.direction.nextCCW).forEach { newDir ->
+                        val newPoint = node.point.neighborInDirection(newDir)
+                        if (newPoint in map ) {
+                            var distanceCheck = newPoint
+                            repeat(3) { distanceCheck = distanceCheck.neighborInDirection(newDir)}
+                            if (distanceCheck in map) {
+                                queue.add(
+                                    Node(
+                                        point = newPoint,
+                                        direction = newDir,
+                                        steps = 1,
+                                        heatLoss = node.heatLoss + map.getValue(newPoint)
+                                    )
+                                )
+                            }
+                        }
                     }
                 }
             }
         }
         verify {
-            expect result null
+            expect result 881
             run test 1 expect 94
             run test 4 expect 71
         }
