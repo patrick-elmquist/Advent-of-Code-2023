@@ -1,9 +1,9 @@
 package day18
 
+import common.Input
 import common.day
 import common.util.Direction
 import common.util.Point
-import common.util.log
 import common.util.nextInDirection
 
 // answer #1: 58550
@@ -13,12 +13,9 @@ import common.util.nextInDirection
 fun main() {
     day(n = 18) {
         part1 { input ->
-            val (bounds, points) = input.lines
-                .map { line -> line.split(" ").let { (a, b) -> a to b.toInt() } }
-                .fold(0L to listOf(Point(0, 0))) { (bounds, points), (dir, len) ->
-                    bounds + len to points + nextPoint(points.last(), dir, len)
-                }
-            calculateInnerArea(points).log("inner:") + bounds / 2L + 1L
+            parseLines(input)
+                .map { (dir, len, _) -> dir to len.toInt() }
+                .calculateArea()
         }
         verify {
             expect result 58550L
@@ -26,13 +23,9 @@ fun main() {
         }
 
         part2 { input ->
-            val (bounds, points) = input.lines
-                .map { it.split(" ").last().drop(2).dropLast(1) }
-                .map { hex -> hex.takeLast(1) to hex.take(5).hexToInt() }
-                .fold(0L to listOf(Point(0, 0))) { (bounds, points), (dir, len) ->
-                    bounds + len to points + nextPoint(points.last(), dir, len)
-                }
-            calculateInnerArea(points) + bounds / 2L + 1L
+            parseLines(input)
+                .map { (_, _, hex) -> hex.takeLast(1) to hex.take(5).hexToInt() }
+                .calculateArea()
         }
         verify {
             expect result 47452118468566L
@@ -41,16 +34,30 @@ fun main() {
     }
 }
 
-private fun nextPoint(source: Point, dir: String, distance: Int): Point {
-    val direction = when (dir.first()) {
-        '0', 'R' -> Direction.Right
-        '1', 'D' -> Direction.Down
-        '2', 'L' -> Direction.Left
-        '3', 'U' -> Direction.Up
-        else -> error("")
+private val regex = """(\w) (\d+) \(#(\w+)\)""".toRegex()
+private fun parseLines(input: Input) =
+    input.lines.mapNotNull { line -> regex.matchEntire(line)?.groupValues?.drop(1) }
+
+private fun List<Pair<String, Int>>.calculateArea(): Long =
+    runningFold(Point(0, 0) to 0L) { (point, _), (dir, len) ->
+        nextPoint(point, dir, len) to len.toLong()
+    }.let { state ->
+        val points = state.map { it.first }
+        val boundary = state.sumOf { it.second }
+        calculateInnerArea(points) + boundary / 2L + 1L
     }
-    return source.nextInDirection(direction, steps = distance)
-}
+
+private fun nextPoint(source: Point, dir: String, distance: Int): Point =
+    source.nextInDirection(
+        direction = when (dir.first()) {
+            '0', 'R' -> Direction.Right
+            '1', 'D' -> Direction.Down
+            '2', 'L' -> Direction.Left
+            '3', 'U' -> Direction.Up
+            else -> error("")
+        },
+        steps = distance,
+    )
 
 private fun calculateInnerArea(points: List<Point>): Long =
     points.map { listOf(it.x.toLong(), it.y.toLong()) }
