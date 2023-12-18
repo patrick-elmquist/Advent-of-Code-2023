@@ -1,5 +1,7 @@
 package common.util
 
+import kotlin.math.abs
+
 /**
  * Class representing a point in 2 dimensions
  */
@@ -32,6 +34,9 @@ val Point.aboveNeighbour: Point
 
 val Point.belowNeighbour: Point
     get() = copy(y = y + 1)
+
+fun Point.distance(other: Point): Int =
+    abs(other.x - x) + abs(other.y - y)
 
 fun Point.nextInDirection(direction: Direction, steps: Int = 1): Point =
     when (direction) {

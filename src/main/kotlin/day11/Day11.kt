@@ -3,7 +3,7 @@ package day11
 import common.Input
 import common.day
 import common.util.Point
-import kotlin.math.abs
+import common.util.distance
 
 // answer #1: 10292708
 // answer #2: 790194712336
@@ -50,6 +50,3 @@ private fun calculateSumOfDistances(input: Input, expandMultiplier: Int): Long {
         .flatMap { a -> expanded.map { b -> a.distance(b).toLong() } }
         .sum() / 2
 }
-
-private fun Point.distance(other: Point): Int =
-    abs(other.x - x) + abs(other.y - y)

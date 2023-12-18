@@ -1,92 +1,59 @@
 package day18
 
 import common.day
-import common.util.*
+import common.util.Direction
+import common.util.Point
+import common.util.log
+import common.util.nextInDirection
 
-// answer #1: not 4292, too low
-// answer #2:
+// answer #1: 58550
+// answer #2: 47452118468566
 
+@OptIn(ExperimentalStdlibApi::class)
 fun main() {
     day(n = 18) {
         part1 { input ->
-            val start = Point(0, 0)
-            val originalMap = mutableListOf(start)
-            input.lines.map { line ->
-                val (dir, len, _) = line.split(" ")
-                val distance = len.toInt()
-                repeat(distance) {
-                    val last = originalMap.last()
-                    when (dir.first()) {
-                        'U' -> originalMap.add(last.aboveNeighbour)
-                        'D' -> originalMap.add(last.belowNeighbour)
-                        'L' -> originalMap.add(last.leftNeighbour)
-                        'R' -> originalMap.add(last.rightNeighbour)
-                        else -> error("")
-                    }
+            val (bounds, points) = input.lines
+                .map { line -> line.split(" ").let { (a, b) -> a to b.toInt() } }
+                .fold(0L to listOf(Point(0, 0))) { (bounds, points), (dir, len) ->
+                    bounds + len to points + nextPoint(points.last(), dir, len)
                 }
-            }
-
-            val mapSet = originalMap.toMutableSet()
-            val minMaxX = mapSet.minOf { it.x }..mapSet.maxOf { it.x }
-            val minMaxY = mapSet.minOf { it.y }..mapSet.maxOf { it.y }
-
-            val leftEdge = minMaxY.map { y -> Point(mapSet.filter { it.y == y }.minOf { it.x }, y) }
-            val startPoint = leftEdge.first { it.rightNeighbour !in mapSet }.rightNeighbour.log("start:")
-//            printMap(mapSet)
-//            TODO()
-            val queue = ArrayDeque<Point>()
-            queue.add(startPoint)
-            val visited = mutableSetOf<Point>()
-            while (queue.isNotEmpty()) {
-                val p = queue.removeFirst()
-                if (p !in mapSet) {
-                    mapSet.add(p)
-                }
-                if (p !in visited) {
-                    visited += p
-                    queue.addAll(
-                        p.neighbors(diagonal = true)
-                            .filter { it.x in minMaxX && it.y in minMaxY }
-                            .filter { it !in mapSet }
-                            .filter { it !in visited }
-                    )
-                }
-            }
-
-            println()
-            printMap(mapSet)
-            mapSet.size
+            calculateInnerArea(points).log("inner:") + bounds / 2L + 1L
         }
         verify {
-            expect result null
-//            run test 1 expect 62
+            expect result 58550L
+            run test 1 expect 62L
         }
 
         part2 { input ->
-
+            val (bounds, points) = input.lines
+                .map { it.split(" ").last().drop(2).dropLast(1) }
+                .map { hex -> hex.takeLast(1) to hex.take(5).hexToInt() }
+                .fold(0L to listOf(Point(0, 0))) { (bounds, points), (dir, len) ->
+                    bounds + len to points + nextPoint(points.last(), dir, len)
+                }
+            calculateInnerArea(points) + bounds / 2L + 1L
         }
         verify {
-            expect result null
-            run test 1 expect Unit
+            expect result 47452118468566L
+            run test 1 expect 952408144115L
         }
     }
 }
 
-private fun printMap(
-    mapSet: Set<Point>
-) {
-    val minMaxX = mapSet.minOf { it.x }..mapSet.maxOf { it.x }
-    val minMaxY = mapSet.minOf { it.y }..mapSet.maxOf { it.y }
-    for (y in minMaxY) {
-        print("$y ".padStart(5, ' '))
-        for (x in minMaxX) {
-            val point = Point(x, y)
-            if (point in mapSet) {
-                print('#')
-            } else {
-                print('.')
-            }
-        }
-        println()
+private fun nextPoint(source: Point, dir: String, distance: Int): Point {
+    val direction = when (dir.first()) {
+        '0', 'R' -> Direction.Right
+        '1', 'D' -> Direction.Down
+        '2', 'L' -> Direction.Left
+        '3', 'U' -> Direction.Up
+        else -> error("")
     }
+    return source.nextInDirection(direction, steps = distance)
 }
+
+private fun calculateInnerArea(points: List<Point>): Long =
+    points.map { listOf(it.x.toLong(), it.y.toLong()) }
+        .zipWithNext()
+        .sumOf { (p1, p2) -> p1[0] * p2[1] - p2[0] * p1[1] }
+        .let { sum -> sum / 2 }
