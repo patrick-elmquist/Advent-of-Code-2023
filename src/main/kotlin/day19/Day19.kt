@@ -1,7 +1,6 @@
 package day19
 
 import common.day
-import common.util.log
 import common.util.sliceByBlank
 
 // answer #1: 391132
@@ -14,9 +13,11 @@ fun main() {
                 parseSteps(a) to parseParts(b)
             }
             val startStep = steps.getValue("in")
-            parts.filter { part ->
-                runSteps(startStep, part, steps) is Result.Accepted
-            }.sumOf { it.x + it.m + it.a + it.s }
+            parts
+                .filter { part ->
+                    runSteps(startStep, part, steps) is Result.Accepted
+                }
+                .sumOf { it.x + it.m + it.a + it.s }
         }
         verify {
             expect result 391132
@@ -24,14 +25,20 @@ fun main() {
         }
 
         part2 { input ->
-            val steps = input.lines.sliceByBlank().let { parseSteps(it.first()) }
+            val steps = input.lines.sliceByBlank().first().let {steps ->
+                steps.associate { line ->
+                    val name = line.takeWhile { it != '{' }
+                    val checks = line.removePrefix(name).drop(1).dropLast(1).split(",")
+                    name to checks
+                }
+            }
 
             val acceptedRanges = mutableListOf<PartRange>()
-            val rangesToInvestigate = ArrayDeque<Pair<String, PartRange>>()
-            rangesToInvestigate += "in" to PartRange()
+            val queue = ArrayDeque<Pair<String, PartRange>>()
+            queue += "in" to PartRange()
 
-            while (rangesToInvestigate.isNotEmpty()) {
-                val (name, range) = rangesToInvestigate.removeFirst()
+            while (queue.isNotEmpty()) {
+                val (name, range) = queue.removeFirst()
 
                 if (name == "R") continue
                 if (name == "A") {
@@ -41,43 +48,27 @@ fun main() {
 
                 val step = steps.getValue(name)
                 var remaining = range
-                val checks = step.checks
-                checks.forEach { check ->
-                    when (check) {
-                        is Step.Check -> {
-                            val field = check.field
-                            val category = remaining.getValue(field)
-                            val n = check.n
-
-                            if (n in category) {
-                                if (check.symbol == '<') {
-                                    rangesToInvestigate += check.outcome to remaining.setValue(
-                                        field,
-                                        category.first..<n
-                                    )
-                                    remaining = remaining.setValue(field, n..category.last)
-                                } else {
-                                    rangesToInvestigate += check.outcome to remaining.setValue(
-                                        field,
-                                        n + 1..category.last
-                                    )
-                                    remaining = remaining.setValue(field, category.first..n)
-                                }
-                            }
-                        }
-
-                        is Step.Default -> {
-                            rangesToInvestigate += check.outcome to remaining
+                step.forEach { check ->
+                    val simpleCheck = parseCheck(check)
+                    if (simpleCheck == null) {
+                        queue += check to remaining
+                    } else {
+                        val (field, symbol, n, outcome) = simpleCheck
+                        val category = remaining.getValue(field)
+                        if (symbol == '<') {
+                            val mutate = remaining.copyWithField(field, category.first..<n)
+                            remaining = remaining.copyWithField(field, n..category.last)
+                            queue += outcome to mutate
+                        } else {
+                            val mutate = remaining.copyWithField(field, n + 1..category.last)
+                            remaining = remaining.copyWithField(field, category.first..n)
+                            queue += outcome to mutate
                         }
                     }
                 }
             }
 
-            fun IntRange.len(): Long = (last - first + 1).toLong()
-
-            acceptedRanges.sumOf {
-                it.x.len() * it.m.len() * it.a.len() * it.s.len()
-            }
+            acceptedRanges.sumOf { it.x.len() * it.m.len() * it.a.len() * it.s.len() }
         }
         verify {
             expect result 128163929109524L
@@ -85,6 +76,16 @@ fun main() {
         }
     }
 }
+
+private data class SimpleCheck(val field: Char, val symbol: Char, val n: Int, val outcome: String)
+
+private val regex = """(\w)([<>])(\d+):(\w+)""".toRegex()
+private fun parseCheck(check: String): SimpleCheck? =
+    regex.matchEntire(check)
+        ?.destructured
+        ?.let { (a, b, c, d) -> SimpleCheck(a.first(), b.first(), c.toInt(), d) }
+
+private fun IntRange.len(): Long = (last - first + 1).toLong()
 
 private data class PartRange(
     val x: IntRange = 1..4000,
@@ -100,7 +101,7 @@ private data class PartRange(
         else -> error("")
     }
 
-    fun setValue(c: Char, range: IntRange) = when (c) {
+    fun copyWithField(c: Char, range: IntRange) = when (c) {
         'x' -> copy(x = range)
         'm' -> copy(m = range)
         'a' -> copy(a = range)
@@ -108,7 +109,6 @@ private data class PartRange(
         else -> error("")
     }
 }
-
 
 private fun runSteps(
     startStep: Step,
@@ -150,8 +150,8 @@ private data class Part(val x: Int, val m: Int, val a: Int, val s: Int) {
 
 private sealed interface Result {
     sealed interface Terminal : Result
-    object Accepted : Terminal
-    object Rejected : Terminal
+    data object Accepted : Terminal
+    data object Rejected : Terminal
     data class Next(val name: String) : Result
     companion object {
         fun from(string: String): Result {
@@ -197,7 +197,9 @@ private data class Step(val input: String) {
 
     fun run(part: Part): Result {
         val next = checks.firstNotNullOfOrNull { check ->
-            check.outcome.takeIf { check.execute(part) }
+            check.outcome.takeIf {
+                check.execute(part)
+            }
         } ?: default
         return Result.from(next)
     }
