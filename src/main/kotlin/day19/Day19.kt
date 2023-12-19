@@ -9,14 +9,14 @@ import common.util.sliceByBlank
 fun main() {
     day(n = 19) {
         part1 { input ->
-            val (steps, parts) = input.lines.sliceByBlank().let { (a, b) ->
-                parseSteps(a) to parseParts(b)
+            val sections = input.lines.sliceByBlank()
+            val steps = sections.first().associate { line ->
+                val name = line.takeWhile { it != '{' }
+                val checks = line.removePrefix(name).drop(1).dropLast(1).split(",")
+                name to checks
             }
-            val startStep = steps.getValue("in")
-            parts
-                .filter { part ->
-                    runSteps(startStep, part, steps) is Result.Accepted
-                }
+            parseParts(sections.last())
+                .filter { part -> runSteps(part, steps) }
                 .sumOf { it.x + it.m + it.a + it.s }
         }
         verify {
@@ -25,7 +25,7 @@ fun main() {
         }
 
         part2 { input ->
-            val steps = input.lines.sliceByBlank().first().let {steps ->
+            val steps = input.lines.sliceByBlank().first().let { steps ->
                 steps.associate { line ->
                     val name = line.takeWhile { it != '{' }
                     val checks = line.removePrefix(name).drop(1).dropLast(1).split(",")
@@ -111,16 +111,29 @@ private data class PartRange(
 }
 
 private fun runSteps(
-    startStep: Step,
     part: Part,
-    steps: Map<String, Step>
-): Result.Terminal {
-    var nextStep = startStep
+    steps: Map<String, List<String>>
+): Boolean {
+    var nextStep = steps.getValue("in")
     while (true) {
-        when (val result = nextStep.run(part)) {
-            is Result.Terminal -> return result
-            is Result.Next -> nextStep = steps.getValue(result.name)
+        val next = nextStep.firstNotNullOf { check ->
+            val simpleCheck = parseCheck(check)
+            if (simpleCheck == null) {
+                check
+            } else {
+                val (field, symbol, n, outcome) = simpleCheck
+                if (symbol == '<') {
+                    outcome.takeIf { part.getValue(field) < n }
+                } else {
+                    outcome.takeIf { part.getValue(field) > n }
+                }
+            }
+
         }
+        if (next in setOf("A", "R")) {
+            return next == "A"
+        }
+        nextStep = steps.getValue(next)
     }
 }
 
@@ -131,13 +144,6 @@ private fun parseParts(parts: List<String>): List<Part> =
             .let { (x, m, a, s) -> Part(x, m, a, s) }
     }
 
-private fun parseSteps(rules: List<String>): Map<String, Step> =
-    rules.associate {
-        val name = it.takeWhile { it != '{' }
-        val step = Step(it.removePrefix(name))
-        name to step
-    }
-
 private data class Part(val x: Int, val m: Int, val a: Int, val s: Int) {
     fun getValue(c: Char) = when (c) {
         'x' -> x
@@ -145,62 +151,5 @@ private data class Part(val x: Int, val m: Int, val a: Int, val s: Int) {
         'a' -> a
         's' -> s
         else -> error("")
-    }
-}
-
-private sealed interface Result {
-    sealed interface Terminal : Result
-    data object Accepted : Terminal
-    data object Rejected : Terminal
-    data class Next(val name: String) : Result
-    companion object {
-        fun from(string: String): Result {
-            return when (string) {
-                "A" -> Accepted
-                "R" -> Rejected
-                else -> Next(string)
-            }
-        }
-    }
-}
-
-private data class Step(val input: String) {
-    private val split = input.removeSurrounding(prefix = "{", suffix = "}").split(",")
-    private val default = split.last()
-    val checks = split.dropLast(1).map { Check(it) } + Default(default)
-
-    sealed interface ICheck {
-        val outcome: String
-        fun execute(part: Part): Boolean
-    }
-
-    data class Default(override val outcome: String) : ICheck {
-        override fun execute(part: Part): Boolean = true
-    }
-
-    data class Check(val string: String) : ICheck {
-        val symbol = if ('<' in string) '<' else '>'
-        private val split = string.split(':')
-        override val outcome = split.last()
-
-        private val condition = split.first().split(symbol)
-        val field = condition.first().first()
-        val n = condition.last().toInt()
-
-        override fun execute(part: Part): Boolean =
-            when (symbol) {
-                '<' -> part.getValue(field) < n
-                '>' -> part.getValue(field) > n
-                else -> error("")
-            }
-    }
-
-    fun run(part: Part): Result {
-        val next = checks.firstNotNullOfOrNull { check ->
-            check.outcome.takeIf {
-                check.execute(part)
-            }
-        } ?: default
-        return Result.from(next)
     }
 }
