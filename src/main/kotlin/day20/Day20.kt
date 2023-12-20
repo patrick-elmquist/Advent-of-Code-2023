@@ -16,17 +16,17 @@ fun main() {
     day(n = 20) {
         part1 { input ->
             val map = parseModuleToDestinationsMap(input)
-            val nameToModule = map.keys.associateBy {
-                when {
-                    it.startsWith('%') -> it.drop(1)
-                    it.startsWith('&') -> it.drop(1)
-                    it == "broadcaster" -> it
-                    else -> error("")
-                }
-            }
+            val nameToModule = nameToModule(map)
 
             var state = State()
-            repeat(1000) { state = pushButton(map, nameToModule, state, start = "broadcaster") }
+            repeat(1000) {
+                state = pushButton(
+                    map = map,
+                    nameToModule = nameToModule,
+                    state = state,
+                    start = "broadcaster"
+                )
+            }
             state.lows * state.highs
         }
         verify {
@@ -38,20 +38,19 @@ fun main() {
         part2 { input ->
             val map = parseModuleToDestinationsMap(input)
             val loopStartModules = map.getValue("broadcaster")
-            val nameToModule = map.keys.associateBy {
-                when {
-                    it.startsWith('%') -> it.drop(1)
-                    it.startsWith('&') -> it.drop(1)
-                    it == "broadcaster" -> it
-                    else -> error("")
-                }
-            }
+            val nameToModule = nameToModule(map)
 
             loopStartModules.map { start ->
                 var state = State()
                 var counter = 0L
                 while (!state.done) {
-                    state = pushButton(map, nameToModule, state, start = start, endCriteria = "kh" to high)
+                    state = pushButton(
+                        map = map,
+                        nameToModule = nameToModule,
+                        state = state,
+                        start = start,
+                        endCriteria = "kh" to high // Node leading to rx
+                    )
                     counter++
                 }
                 counter
@@ -63,8 +62,19 @@ fun main() {
     }
 }
 
-private fun parseModuleToDestinationsMap(input: Input) = input.lines.map { line -> line.split(" -> ") }
-    .associate { (module, destinations) -> module to destinations.split(", ") }
+private fun parseModuleToDestinationsMap(input: Input) =
+    input.lines.map { line -> line.split(" -> ") }
+        .associate { (module, destinations) -> module to destinations.split(", ") }
+
+private fun nameToModule(map: Map<String, List<String>>) =
+    map.keys.associateBy {
+        when {
+            it.startsWith('%') -> it.drop(1)
+            it.startsWith('&') -> it.drop(1)
+            it == "broadcaster" -> it
+            else -> error("")
+        }
+    }
 
 private fun pushButton(
     map: Map<String, List<String>>,
@@ -79,8 +89,8 @@ private fun pushButton(
     var lows = 1L
     var highs = 0L
 
-    fun emit(destinations: List<String>, pulse: String, module: String): List<Triple<String, String, String>> {
-        return destinations.map { Triple(it, pulse, module) }
+    fun emit(destinations: List<String>, pulse: String, module: String): List<Triple<String, String, String>> =
+        destinations.map { Triple(it, pulse, module) }
             .also {
                 if (pulse == low) {
                     lows += it.size
@@ -88,7 +98,7 @@ private fun pushButton(
                     highs += it.size
                 }
             }
-    }
+
     while (queue.isNotEmpty()) {
         val (name, pulse, source) = queue.removeFirst()
 
@@ -102,11 +112,11 @@ private fun pushButton(
                 done = true,
             )
         }
-        when {
-            module !in map -> {}
+        queue += when {
+            module !in map -> emptyList()
 
             module == "broadcaster" -> {
-                queue += emit(destinations, pulse, module)
+                emit(destinations, pulse, module)
             }
 
             module.startsWith('%') -> {
@@ -114,33 +124,37 @@ private fun pushButton(
                     when (state.states.getOrPut(module) { off }) {
                         on -> {
                             state.states[module] = off
-                            queue += emit(destinations, low, module)
+                            emit(destinations, low, module)
                         }
 
                         off -> {
                             state.states[module] = on
-                            queue += emit(destinations, high, module)
+                            emit(destinations, high, module)
                         }
 
                         else -> error("")
                     }
+                } else {
+                    emptyList()
                 }
             }
 
             module.startsWith('&') -> {
                 val memo = state.memory.getOrPut(module) {
-                    map.filter { (_, dest) -> dest.contains(name) }
+                    map.filter { (_, destinations) -> destinations.contains(name) }
                         .keys
                         .associateWith { low }
                         .toMutableMap()
                 }
                 memo[source] = pulse
-                queue += if (memo.all { it.value == high }) {
+                if (memo.all { it.value == high }) {
                     emit(destinations, low, module)
                 } else {
                     emit(destinations, high, module)
                 }
             }
+
+            else -> error("")
         }
     }
 
@@ -156,5 +170,4 @@ private data class State(
     val memory: MutableMap<String, MutableMap<String, String>> = mutableMapOf(),
     val states: MutableMap<String, String> = mutableMapOf(),
     val done: Boolean = false,
-    val counter: Long = 0L,
 )
