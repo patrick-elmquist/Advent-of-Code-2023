@@ -1,85 +1,73 @@
 package day21
 
-import common.*
-import common.util.*
-import kotlin.collections.ArrayDeque
-import kotlin.math.ceil
+import common.bounds
+import common.day
+import common.grid
+import common.util.Point
+import common.util.neighbors
 
 // answer #1: 3572
-// answer #2:
-// not 594600652054873, too low
-// not 594606492802729, too low
-// not 76856573672052
-// not 677521293049856
-// not 677507839268820
-// not 677514537387279
+// answer #2: 594606492802848
 
 fun main() {
     day(n = 21) {
         part1 { input ->
-            val map = input.grid
-            val start = map.entries.first { it.value == 'S' }.key
-            map.findEndPoints(start, steps = 64)
+            val grid = input.grid
+            val start = grid.entries.first { it.value == 'S' }.key
+            findEndPoints(grid, start, steps = 64)
         }
         verify {
             expect result 3572L
         }
 
         part2 { input ->
-            val map = input.grid
-            val start = map.entries.first { it.value == 'S' }.key
-            val steps = 26501365L
+            val grid = input.grid
+            val start = grid.entries.first { it.value == 'S' }.key
             val (width, height) = input.bounds
-            val mod = steps % height
 
-            val list = listOf(mod, mod + height, mod + height * 2)
+            val targetSteps = 26501365L
+            val cycles = targetSteps / width
+            val reminder = targetSteps % width
+            val points = mutableListOf<Point>()
 
-            val seenStates = mutableListOf<Long>()
-            list.forEach { run ->
-                val nextQueue = mutableListOf(start)
-
-                for (a in 0..<run) {
-                    val currentQueue = nextQueue.toMutableList()
-                    val visited = nextQueue.toMutableSet()
-                    nextQueue.clear()
-
-                    while (currentQueue.isNotEmpty()) {
-                        val curr = currentQueue.removeFirst()
-                        curr.neighbors()
-                            .forEach { dir ->
-                                val (newX, newY) = dir
-                                if (
-                                    map[Point(x = newX % width, y = newY % height)] != '#' &&
-                                    dir !in visited
-                                ) {
-                                    visited += dir
-                                    nextQueue += dir
-                                }
+            var steps = 0
+            var todo = setOf(start)
+            repeat(3) { i ->
+                while (steps < i * width + reminder) {
+                    todo = todo.flatMap { point ->
+                        point.neighbors()
+                            .filter {
+                                val wrapped = Point(
+                                    x = (it.x % width + width) % width,
+                                    y = (it.y % height + height) % height
+                                )
+                                grid[wrapped] != '#'
                             }
-                    }
+                    }.toSet()
+                    steps++
                 }
-
-                seenStates += nextQueue.size.toLong()
+                points += Point(i, todo.size)
             }
 
-            seenStates.log()
-            val m = seenStates[1] - seenStates[0]
-            val n = seenStates[2] - seenStates[1]
-            val a = (n - m) / 2
-            val b = m - 3 * a
-            val c = seenStates[0] - b - a
-
-            val ceiling = 26501365L / height log "ceil"
-
-            (a * ceiling * ceiling + b * ceiling + c).toLong()
+            findTotal(cycles, points)
         }
         verify {
-            expect result null
+            expect result 594606492802848L
         }
     }
 }
 
-private fun Map<Point, Char>.findEndPoints(
+private fun findTotal(x: Long, points: List<Point>): Long {
+    val (x1, y1) = points[0]
+    val (x2, y2) = points[1]
+    val (x3, y3) = points[2]
+    return (x - x2) * (x - x3) / ((x1 - x2) * (x1 - x3)) * y1 +
+            (x - x1) * (x - x3) / ((x2 - x1) * (x2 - x3)) * y2 +
+            (x - x1) * (x - x2) / ((x3 - x1) * (x3 - x2)) * y3
+}
+
+private fun findEndPoints(
+    map: Map<Point, Char>,
     start: Point,
     steps: Int
 ): Long {
@@ -98,8 +86,7 @@ private fun Map<Point, Char>.findEndPoints(
         val nextStepsLeft = stepsLeft - 1
         if (nextStepsLeft >= 0) {
             point.neighbors()
-                .filter { it !in visited }
-                .filter { this[it] == '.' }
+                .filter { map[it] == '.' && it !in visited }
                 .forEach { next ->
                     visited += next
                     queue += next to nextStepsLeft
