@@ -1,6 +1,7 @@
 package common
 
 import common.util.Point
+import common.util.pointCharMap
 import java.io.File
 
 data class Input(val lines: List<String>) {
@@ -12,4 +13,4 @@ data class Input(val lines: List<String>) {
 }
 
 val Input.pointCharMap: Map<Point, Char>
-    get() = lines.flatMapIndexed { y, row -> row.mapIndexed { x, c -> Point(x, y) to c } }.toMap()
+    get() = lines.pointCharMap
