@@ -3,9 +3,16 @@ package day21
 import common.*
 import common.util.*
 import kotlin.collections.ArrayDeque
+import kotlin.math.ceil
 
 // answer #1: 3572
 // answer #2:
+// not 594600652054873, too low
+// not 594606492802729, too low
+// not 76856573672052
+// not 677521293049856
+// not 677507839268820
+// not 677514537387279
 
 fun main() {
     day(n = 21) {
@@ -21,50 +28,50 @@ fun main() {
         part2 { input ->
             val map = input.grid
             val start = map.entries.first { it.value == 'S' }.key
-            val size = input.bounds.first log "size"
             val steps = 26501365L
+            val (width, height) = input.bounds
+            val mod = steps % height
 
-            assert(input.bounds.first == input.bounds.second)
-            assert(start.x == start.y)
-            assert(start.x == size / 2)
-            assert((steps % size) == size / 2L)
+            val list = listOf(mod, mod + height, mod + height * 2)
 
-            val width = (steps / size - 1) log "width"
+            val seenStates = mutableListOf<Long>()
+            list.forEach { run ->
+                val nextQueue = mutableListOf(start)
 
-            val odd = (width / 2 * 2 + 1).let { it * it } log "odd"
-            val even = ((width + 1) / 2 * 2).let { it * it } log "even"
+                for (a in 0..<run) {
+                    val currentQueue = nextQueue.toMutableList()
+                    val visited = nextQueue.toMutableSet()
+                    nextQueue.clear()
 
-            // above is correct
+                    while (currentQueue.isNotEmpty()) {
+                        val curr = currentQueue.removeFirst()
+                        curr.neighbors()
+                            .forEach { dir ->
+                                val (newX, newY) = dir
+                                if (
+                                    map[Point(x = newX % width, y = newY % height)] != '#' &&
+                                    dir !in visited
+                                ) {
+                                    visited += dir
+                                    nextQueue += dir
+                                }
+                            }
+                    }
+                }
 
-            val oddPoints = map.findEndPoints(start, size * 2 + 1) log "odd points"
+                seenStates += nextQueue.size.toLong()
+            }
 
-            val evenPoints = map.findEndPoints(start, size * 2) log "even points"
+            seenStates.log()
+            val m = seenStates[1] - seenStates[0]
+            val n = seenStates[2] - seenStates[1]
+            val a = (n - m) / 2
+            val b = m - 3 * a
+            val c = seenStates[0] - b - a
 
-            val cornerSteps = size - 1
-            val topCorner = map.findEndPoints(start.copy(y = size - 1), cornerSteps)
-            val rightCorner = map.findEndPoints(start.copy(x = 0), cornerSteps)
-            val bottomCorner = map.findEndPoints(start.copy(y = 0), cornerSteps)
-            val leftCorner = map.findEndPoints(start.copy(x = size - 1), cornerSteps)
+            val ceiling = 26501365L / height log "ceil"
 
-            val smallSteps = size / 2 - 1
-            val smallTopRight = map.findEndPoints(Point(0, size - 1), smallSteps)
-            val smallTopLeft = map.findEndPoints(Point(size - 1, size - 1), smallSteps)
-            val smallBottomRight = map.findEndPoints(Point(0, 0), smallSteps)
-            val smallBottomLeft = map.findEndPoints(Point(size - 1, 0), smallSteps)
-
-            val largeSteps = size * 3 / 2 - 1
-            val largeTopRight = map.findEndPoints(Point(0, size - 1), largeSteps)
-            val largeTopLeft = map.findEndPoints(Point(size - 1, size - 1), largeSteps)
-            val largeBottomRight = map.findEndPoints(Point(0, 0), largeSteps)
-            val largeBottomLeft = map.findEndPoints(Point(size - 1, 0), largeSteps)
-
-            odd * oddPoints +
-                    even * evenPoints +
-                    topCorner + rightCorner + bottomCorner + leftCorner +
-                    (width + 1) * (smallTopRight + smallTopLeft + smallBottomRight + smallBottomLeft) +
-                    width * (largeTopRight + largeTopLeft + largeBottomRight + largeBottomLeft)
-            // not 594600652054873, too low
-            // not 594606492802729, too low
+            (a * ceiling * ceiling + b * ceiling + c).toLong()
         }
         verify {
             expect result null

@@ -14,7 +14,6 @@ import kotlin.math.min
 operator fun String.not() = println(this)
 
 var loggingEnabled = true
-var tagSize = 0
 
 inline fun <T> T.log(): T {
     if (!loggingEnabled) return this
@@ -29,6 +28,5 @@ inline fun <T> T.log(msg: () -> Any): T {
 inline infix fun <T> T.log(msg: Any): T {
     if (!loggingEnabled) return this
     val tag = msg.toString()
-    tagSize = max(tagSize, tag.length)
-    return this.also { println("${tag.padStart(tagSize, ' ')}\t$it") }
+    return this.also { println("$tag\t$it") }
 }
