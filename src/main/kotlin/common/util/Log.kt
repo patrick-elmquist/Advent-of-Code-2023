@@ -21,7 +21,15 @@ inline fun <T> T.log(msg: () -> Any): T {
     return this.also { println(msg()) }
 }
 
-inline fun <T> T.log(msg: String): T {
+inline infix fun <T> T.log(msg: Any): T {
     if (!loggingEnabled) return this
     return this.also { println("$msg$it") }
+}
+
+fun main() {
+    test()
+}
+fun test() {
+    val i = 1
+    i log "i:"
 }
