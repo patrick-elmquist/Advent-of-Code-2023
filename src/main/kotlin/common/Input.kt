@@ -15,5 +15,8 @@ data class Input(val lines: List<String>) {
 val Input.pointCharMap: Map<Point, Char>
     get() = lines.pointCharMap
 
+val Input.grid: Map<Point, Char>
+    get() = lines.pointCharMap
+
 val Input.bounds: Pair<Int, Int>
     get() = lines.first().length to lines.size
