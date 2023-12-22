@@ -22,7 +22,9 @@ fun main() {
             }
             val sorted = blocks.sortedBy { (start, end) -> min(start.z, end.z) }
             val updated = compress(sorted)
+            updated.size log "updated"
             val bearing = findBearingBlocks(updated)
+            bearing.size log "bearing"
             updated.size - bearing.size
         }
         verify {
@@ -31,60 +33,66 @@ fun main() {
         }
 
         part2 { input ->
-            val blocks = input.lines.mapIndexed { index, line ->
+            val init = input.lines.mapIndexed { index, line ->
                 line.split("~").map { it.split(",") }
                     .let { (a, b) ->
                         Block(Point3D(a[0], a[1], a[2]), Point3D(b[0], b[1], b[2]), 'A' + index)
                     }
             }
-            val sorted = blocks.sortedBy { (start, end) -> min(start.z, end.z) }
-            val updated = compress(sorted)
-
+            val updated = compress(init.sortedBy<Block, Int> { (start, end) -> min(start.z, end.z) })
             val bearing = findBearingBlocks(updated)
+
             val pointToBlockMap = updated.flatMap { block -> block.range.map { it to block } }.toMap()
             // calculate a map of a block and all who directly depend on it
-            val blockToDependers = mutableMapOf<Block, MutableList<Block>>()
-            val blockToBearing = mutableMapOf<Block, List<Block>>()
+            val blockIsBearing = mutableMapOf<Block, MutableList<Block>>()
+            val blockRestingOn = mutableMapOf<Block, List<Block>>()
             updated.forEach { block ->
                 val restingOn = block.bottom.map { it.copy(z = it.z - 1) }
                 val restingPoints = restingOn
                     .mapNotNull { pointToBlockMap[it] }
                     .distinct()
 
-                blockToBearing[block] = restingPoints
+                blockRestingOn[block] = restingPoints
 
                 restingPoints.forEach { bear ->
-                    val list = blockToDependers.getOrPut(bear) { mutableListOf() }
+                    val list = blockIsBearing.getOrPut(bear) { mutableListOf() }
                     list.add(block)
                 }
             }
 
-            blockToDependers.map {
-                it.key.letter to it.value.map { it.letter }
-            } log "dep"
+            val movements = mutableMapOf<Block, MutableSet<Block>>()
+            val q = updated.filter { it !in blockIsBearing }.map { it } log "queue"
+            val prioQueue = PriorityQueue<Block>(compareByDescending { block -> block.lowest })
 
-            val movements = mutableMapOf<Block, List<Block>>()
-            val queue = updated.filter { it !in blockToDependers }
-                .map { it to emptyList<Block>() }.toMutableList() log "queue"
-            val prioQueue = PriorityQueue<>
-            while (queue.isNotEmpty()) {
-                val (block, movementsAbove) = queue.removeFirst()
-//                block.letter log "block:"
+            prioQueue += q
+            movements += prioQueue.map { it to mutableSetOf() }
+            val visited = mutableSetOf<Block>()
+            while (prioQueue.isNotEmpty()) {
+                val block = prioQueue.poll()
 
-                queue.size log "size:"
-                val m = if (block in bearing) {
-                    movementsAbove
-                } else {
-                    emptyList()
-                }
-                movements.merge(block, m) { a, b -> a + b }
+                if (block in visited) continue
+                visited += block
 
-                queue += blockToBearing[block]?.map { it to movementsAbove + block } ?: emptyList()
+                val next = blockRestingOn.getValue(block)
+                prioQueue += next
+                    .map { n ->
+                        val myMovements = movements.getValue(block)
+                        val list = movements.getOrPut(n) { mutableSetOf() }
+                        list.addAll(myMovements)
+                        list.add(block)
+                        n
+                    }
             }
 
             bearing.map { it.letter } log "bearing"
-            movements.map { it.key.letter to it.value.distinct().size } log "move"
-            movements.entries.sumOf { it.value.distinct().size }
+            movements.map { it.key.letter to it.value.reversed().map { it.letter } } log "move"
+            movements.entries.filter { it.key in bearing }.map { it.key.letter to it.value.map { it.letter } } log "result"
+
+            movements.forEach { (block, set) ->
+                val toCheck = blockIsBearing.getValue(block).toM
+
+            }
+            TODO()
         }
         verify {
             expect result null
