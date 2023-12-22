@@ -23,6 +23,9 @@ data class Point3D(val x: Int, val y: Int, val z: Int) {
     companion object
 }
 
+val Point3D.xy: Point
+    get() = Point(x = x, y = y)
+
 val Point.leftNeighbour: Point
     get() = copy(x = x - 1)
 

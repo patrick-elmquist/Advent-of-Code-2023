@@ -5,6 +5,9 @@ import common.Input
 val List<String>.pointCharMap: Map<Point, Char>
     get() = flatMapIndexed { y, row -> row.mapIndexed { x, c -> Point(x, y) to c } }.toMap()
 
+fun <T> List<String>.mapWithRegex(regex: Regex, transform: (MatchResult.Destructured) -> T): List<T> =
+    map { line -> transform(regex.find(line)!!.destructured) }
+
 fun List<String>.sliceByBlank() =
     sliceBy(excludeMatch = true) { _, line -> line.isEmpty() }
 
