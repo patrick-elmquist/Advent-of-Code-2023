@@ -10,6 +10,9 @@ import kotlin.math.min
 // answer #1: 448
 // answer #2: not 102227, too high
 //            not 102215, too high
+//            not 2478, too low
+//            not 61401
+//            not 42737
 
 fun main() {
     day(n = 22) {
@@ -38,6 +41,7 @@ fun main() {
                     }
             }
             val updated = compress(init.sortedBy<Block, Int> { (start, end) -> min(start.z, end.z) })
+
             val bearing = findBearingBlocks(updated)
 
             val pointToBlockMap = updated.flatMap { block -> block.range.map { it to block } }.toMap()
@@ -58,46 +62,29 @@ fun main() {
                 }
             }
 
-            fun rec(
-                block: Block,
-                blockIsLifting: Map<Block, List<Block>>,
-                blockIsRestingOn: Map<Block, List<Block>>,
-                memo: MutableMap<Block, Set<Block>>,
-                visited: MutableSet<Block>,
-            ): Set<Block> {
-                if (block in visited) {
-                    println("${block.letter} ignoring")
-                    return emptySet()
+            bearing.sumOf { bear ->
+                println("bear: ${bear.letter}")
+                val list = bear.above.mapNotNull { point -> pointToBlockMap[point] }
+                val queue = ArrayDeque<Block>()
+                val visited = mutableSetOf(bear)
+                visited += list
+                queue += list
+                while (queue.isNotEmpty()) {
+                    val b = queue.removeFirst()
+                    println("checking: ${b.letter}")
+                    b.above
+                        .mapNotNull { point -> pointToBlockMap[point] }
+                        .filter { it !in visited }
+                        .forEach { next ->
+                            val test = blockRestingOn.getValue(next).filter { it !in visited }
+                            if (test.size == 0) {
+                                queue += next
+                            }
+                            visited += next
+                        }
                 }
-                visited += block
-
-                println("${block.letter} visiting")
-                return memo.getOrPut(block) {
-                    block.above.mapNotNull { pointToBlockMap }.forEach {
-                        blockRestingOn
-
-                    }
-
-                    TODO()
-                }.also { println("${block.letter} returning ${it.map { it.letter }}") }
-            }
-
-            val memo = mutableMapOf<Block, Set<Block>>()
-            val sum = bearing.sortedByDescending { it.lowest }
-                .sumOf {
-                    println(it.letter)
-                    rec(
-                        block = it,
-                        blockIsLifting = blockIsBearing,
-                        blockIsRestingOn = blockRestingOn,
-                        memo = memo,
-                        visited = mutableSetOf()
-                    ).size
-                }
-
-            memo.map { it.key.letter to it.value.map { it.letter } } log "memo"
-
-            sum log "sum"
+                (visited - bear).size
+            }.log("sum")
         }
         verify {
             expect result null
