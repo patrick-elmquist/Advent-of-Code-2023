@@ -5,10 +5,11 @@ import common.util.Point
 import common.util.Point3D
 import common.util.log
 import common.util.xy
+import java.util.PriorityQueue
 import kotlin.math.min
 
 // answer #1: 448
-// answer #2:
+// answer #2: not 102227, too high
 
 fun main() {
     day(n = 22) {
@@ -19,59 +20,10 @@ fun main() {
                         Block(Point3D(a[0], a[1], a[2]), Point3D(b[0], b[1], b[2]), 'A' + index)
                     }
             }
-
-            val floorHeight = mutableMapOf<Point, Int>().withDefault { 0 }
             val sorted = blocks.sortedBy { (start, end) -> min(start.z, end.z) }
-
-            print(blocks, xAxis = Axis.X, yAxis = Axis.Z)
-            println()
-            print(blocks, xAxis = Axis.Y, yAxis = Axis.Z)
-
-            val updated = sorted.map { block ->
-                val (start, end) = block
-                if (start.x == end.x && start.y == end.y) {
-                    // either vertical or single
-                    val order = listOf(start, end).sortedBy { it.z }
-                    val floor = floorHeight.getValue(start.xy)
-                    val newStart = start.copy(z = floor + 1)
-                    val newEnd = end.copy(z = newStart.z + (order.last().z - order.first().z))
-                    floorHeight[start.xy] = newEnd.z
-                    block.copy(start = newStart, end = newEnd)
-                } else if (start.x == end.x) {
-                    // moving along y
-                    val range = if (start.y < end.y) start.y..end.y else end.y..start.y
-                    val floor = range.maxOf { y -> floorHeight.getValue(Point(start.x, y)) }
-                    val newStart = start.copy(z = floor + 1)
-                    val newEnd = end.copy(z = floor + 1)
-                    range.forEach { y -> floorHeight[Point(start.x, y)] = floor + 1 }
-                    block.copy(start = newStart, end = newEnd)
-                } else {
-                    // moving along x
-                    val range = if (start.x < end.x) start.x..end.x else end.x..start.x
-                    val floor = range.maxOf { x -> floorHeight.getValue(Point(x, start.y)) }
-                    val newStart = start.copy(z = floor + 1)
-                    val newEnd = end.copy(z = floor + 1)
-                    range.forEach { x -> floorHeight[Point(x, start.y)] = floor + 1 }
-                    block.copy(start = newStart, end = newEnd)
-                }
-            }
-
-            val pointToBlockMap = updated.flatMap { block -> block.range.map { it to block } }.toMap()
-            val vital = mutableSetOf<Block>()
-            updated.forEach { block ->
-                val restingOn = block.bottom.map { it.copy(z = it.z - 1) }
-                val restingPoints = restingOn
-                    .mapNotNull { pointToBlockMap[it] }
-                    .distinct()
-
-                if (restingPoints.size == 1) {
-                    vital += restingPoints.single()
-                }
-            }
-
-            updated.size log "updated"
-            vital.size log "vital"
-            (updated.size - vital.size)
+            val updated = compress(sorted)
+            val bearing = findBearingBlocks(updated)
+            updated.size - bearing.size
         }
         verify {
             expect result 448
@@ -79,21 +31,121 @@ fun main() {
         }
 
         part2 { input ->
+            val blocks = input.lines.mapIndexed { index, line ->
+                line.split("~").map { it.split(",") }
+                    .let { (a, b) ->
+                        Block(Point3D(a[0], a[1], a[2]), Point3D(b[0], b[1], b[2]), 'A' + index)
+                    }
+            }
+            val sorted = blocks.sortedBy { (start, end) -> min(start.z, end.z) }
+            val updated = compress(sorted)
 
+            val bearing = findBearingBlocks(updated)
+            val pointToBlockMap = updated.flatMap { block -> block.range.map { it to block } }.toMap()
+            // calculate a map of a block and all who directly depend on it
+            val blockToDependers = mutableMapOf<Block, MutableList<Block>>()
+            val blockToBearing = mutableMapOf<Block, List<Block>>()
+            updated.forEach { block ->
+                val restingOn = block.bottom.map { it.copy(z = it.z - 1) }
+                val restingPoints = restingOn
+                    .mapNotNull { pointToBlockMap[it] }
+                    .distinct()
+
+                blockToBearing[block] = restingPoints
+
+                restingPoints.forEach { bear ->
+                    val list = blockToDependers.getOrPut(bear) { mutableListOf() }
+                    list.add(block)
+                }
+            }
+
+            blockToDependers.map {
+                it.key.letter to it.value.map { it.letter }
+            } log "dep"
+
+            val movements = mutableMapOf<Block, List<Block>>()
+            val queue = updated.filter { it !in blockToDependers }
+                .map { it to emptyList<Block>() }.toMutableList() log "queue"
+            val prioQueue = PriorityQueue<>
+            while (queue.isNotEmpty()) {
+                val (block, movementsAbove) = queue.removeFirst()
+//                block.letter log "block:"
+
+                queue.size log "size:"
+                val m = if (block in bearing) {
+                    movementsAbove
+                } else {
+                    emptyList()
+                }
+                movements.merge(block, m) { a, b -> a + b }
+
+                queue += blockToBearing[block]?.map { it to movementsAbove + block } ?: emptyList()
+            }
+
+            bearing.map { it.letter } log "bearing"
+            movements.map { it.key.letter to it.value.distinct().size } log "move"
+            movements.entries.sumOf { it.value.distinct().size }
         }
         verify {
             expect result null
-            run test 1 expect Unit
+            run test 1 expect 7
         }
     }
 }
 
+private fun compress(sorted: List<Block>): List<Block> {
+    val floorHeight = mutableMapOf<Point, Int>().withDefault { 0 }
+    val updated = sorted.map { block ->
+        val (start, end) = block
+        if (start.x == end.x && start.y == end.y) {
+            // either vertical or single
+            val order = listOf(start, end).sortedBy { it.z }
+            val floor = floorHeight.getValue(start.xy)
+            val newStart = start.copy(z = floor + 1)
+            val newEnd = end.copy(z = newStart.z + (order.last().z - order.first().z))
+            floorHeight[start.xy] = newEnd.z
+            block.copy(start = newStart, end = newEnd)
+        } else if (start.x == end.x) {
+            // moving along y
+            val range = if (start.y < end.y) start.y..end.y else end.y..start.y
+            val floor = range.maxOf { y -> floorHeight.getValue(Point(start.x, y)) }
+            val newStart = start.copy(z = floor + 1)
+            val newEnd = end.copy(z = floor + 1)
+            range.forEach { y -> floorHeight[Point(start.x, y)] = floor + 1 }
+            block.copy(start = newStart, end = newEnd)
+        } else {
+            // moving along x
+            val range = if (start.x < end.x) start.x..end.x else end.x..start.x
+            val floor = range.maxOf { x -> floorHeight.getValue(Point(x, start.y)) }
+            val newStart = start.copy(z = floor + 1)
+            val newEnd = end.copy(z = floor + 1)
+            range.forEach { x -> floorHeight[Point(x, start.y)] = floor + 1 }
+            block.copy(start = newStart, end = newEnd)
+        }
+    }
+    return updated
+}
+
+private fun findBearingBlocks(updated: List<Block>): MutableSet<Block> {
+    val pointToBlockMap = updated.flatMap { block -> block.range.map { it to block } }.toMap()
+    val vital = mutableSetOf<Block>()
+    updated.forEach { block ->
+        val restingOn = block.bottom.map { it.copy(z = it.z - 1) }
+        val restingPoints = restingOn
+            .mapNotNull { pointToBlockMap[it] }
+            .distinct()
+
+        if (restingPoints.size == 1) {
+            vital += restingPoints.single()
+        }
+    }
+    return vital
+}
+
 private data class Block(val start: Point3D, val end: Point3D, val letter: Char) {
     val range = getRangeInternal()
-    val bottom by lazy {
-        val min = range.minOf { it.z }
-        range.filter { it.z == min }
-    }
+    val lowest = range.minOf { it.z }
+    val bottom = range.filter { it.z == lowest }
 
     private fun getRangeInternal(): List<Point3D> {
         val rangeX = if (start.x < end.x) start.x..end.x else end.x..start.x
