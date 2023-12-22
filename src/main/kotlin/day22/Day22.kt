@@ -3,10 +3,11 @@ package day22
 import common.day
 import common.util.Point
 import common.util.Point3D
+import common.util.log
 import common.util.xy
 import kotlin.math.min
 
-// answer #1:
+// answer #1: 448
 // answer #2:
 
 fun main() {
@@ -55,16 +56,26 @@ fun main() {
                 }
             }
 
-            println("Updated")
-            print(updated, xAxis = Axis.X, yAxis = Axis.Z)
-            println()
-            print(updated, xAxis = Axis.Y, yAxis = Axis.Z)
+            val pointToBlockMap = updated.flatMap { block -> block.range.map { it to block } }.toMap()
+            val vital = mutableSetOf<Block>()
+            updated.forEach { block ->
+                val restingOn = block.bottom.map { it.copy(z = it.z - 1) }
+                val restingPoints = restingOn
+                    .mapNotNull { pointToBlockMap[it] }
+                    .distinct()
 
-            TODO()
+                if (restingPoints.size == 1) {
+                    vital += restingPoints.single()
+                }
+            }
+
+            updated.size log "updated"
+            vital.size log "vital"
+            (updated.size - vital.size)
         }
         verify {
-            expect result null
-            run test 1 expect Unit
+            expect result 448
+            run test 1 expect 5
         }
 
         part2 { input ->
@@ -77,7 +88,28 @@ fun main() {
     }
 }
 
-private data class Block(val start: Point3D, val end: Point3D, val letter: Char)
+private data class Block(val start: Point3D, val end: Point3D, val letter: Char) {
+    val range = getRangeInternal()
+    val bottom by lazy {
+        val min = range.minOf { it.z }
+        range.filter { it.z == min }
+    }
+
+    private fun getRangeInternal(): List<Point3D> {
+        val rangeX = if (start.x < end.x) start.x..end.x else end.x..start.x
+        val rangeY = if (start.y < end.y) start.y..end.y else end.y..start.y
+        val rangeZ = if (start.z < end.z) start.z..end.z else end.z..start.z
+        val list = mutableListOf<Point3D>()
+        for (x in rangeX) {
+            for (y in rangeY) {
+                for (z in rangeZ) {
+                    list += Point3D(x, y, z)
+                }
+            }
+        }
+        return list
+    }
+}
 
 enum class Axis { X, Y, Z }
 
