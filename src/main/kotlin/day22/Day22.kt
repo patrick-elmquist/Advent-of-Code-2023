@@ -5,11 +5,11 @@ import common.util.Point
 import common.util.Point3D
 import common.util.log
 import common.util.xy
-import java.util.PriorityQueue
 import kotlin.math.min
 
 // answer #1: 448
 // answer #2: not 102227, too high
+//            not 102215, too high
 
 fun main() {
     day(n = 22) {
@@ -22,9 +22,7 @@ fun main() {
             }
             val sorted = blocks.sortedBy { (start, end) -> min(start.z, end.z) }
             val updated = compress(sorted)
-            updated.size log "updated"
             val bearing = findBearingBlocks(updated)
-            bearing.size log "bearing"
             updated.size - bearing.size
         }
         verify {
@@ -60,39 +58,46 @@ fun main() {
                 }
             }
 
-            val movements = mutableMapOf<Block, MutableSet<Block>>()
-            val q = updated.filter { it !in blockIsBearing }.map { it } log "queue"
-            val prioQueue = PriorityQueue<Block>(compareByDescending { block -> block.lowest })
-
-            prioQueue += q
-            movements += prioQueue.map { it to mutableSetOf() }
-            val visited = mutableSetOf<Block>()
-            while (prioQueue.isNotEmpty()) {
-                val block = prioQueue.poll()
-
-                if (block in visited) continue
+            fun rec(
+                block: Block,
+                blockIsLifting: Map<Block, List<Block>>,
+                blockIsRestingOn: Map<Block, List<Block>>,
+                memo: MutableMap<Block, Set<Block>>,
+                visited: MutableSet<Block>,
+            ): Set<Block> {
+                if (block in visited) {
+                    println("${block.letter} ignoring")
+                    return emptySet()
+                }
                 visited += block
 
-                val next = blockRestingOn.getValue(block)
-                prioQueue += next
-                    .map { n ->
-                        val myMovements = movements.getValue(block)
-                        val list = movements.getOrPut(n) { mutableSetOf() }
-                        list.addAll(myMovements)
-                        list.add(block)
-                        n
+                println("${block.letter} visiting")
+                return memo.getOrPut(block) {
+                    block.above.mapNotNull { pointToBlockMap }.forEach {
+                        blockRestingOn
+
                     }
+
+                    TODO()
+                }.also { println("${block.letter} returning ${it.map { it.letter }}") }
             }
 
-            bearing.map { it.letter } log "bearing"
-            movements.map { it.key.letter to it.value.reversed().map { it.letter } } log "move"
-            movements.entries.filter { it.key in bearing }.map { it.key.letter to it.value.map { it.letter } } log "result"
+            val memo = mutableMapOf<Block, Set<Block>>()
+            val sum = bearing.sortedByDescending { it.lowest }
+                .sumOf {
+                    println(it.letter)
+                    rec(
+                        block = it,
+                        blockIsLifting = blockIsBearing,
+                        blockIsRestingOn = blockRestingOn,
+                        memo = memo,
+                        visited = mutableSetOf()
+                    ).size
+                }
 
-            movements.forEach { (block, set) ->
-                val toCheck = blockIsBearing.getValue(block).toM
+            memo.map { it.key.letter to it.value.map { it.letter } } log "memo"
 
-            }
-            TODO()
+            sum log "sum"
         }
         verify {
             expect result null
@@ -152,7 +157,9 @@ private fun findBearingBlocks(updated: List<Block>): MutableSet<Block> {
 
 private data class Block(val start: Point3D, val end: Point3D, val letter: Char) {
     val range = getRangeInternal()
+    val highest = range.maxOf { it.z }
     val lowest = range.minOf { it.z }
+    val above = range.filter { it.z == highest }.map { it.copy(z = highest + 1) }
     val bottom = range.filter { it.z == lowest }
 
     private fun getRangeInternal(): List<Point3D> {
