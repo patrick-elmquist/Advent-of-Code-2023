@@ -13,6 +13,7 @@ import kotlin.math.min
 //            not 2478, too low
 //            not 61401
 //            not 42737
+//            not 41988
 
 fun main() {
     day(n = 22) {
@@ -25,7 +26,7 @@ fun main() {
             }
             val sorted = blocks.sortedBy { (start, end) -> min(start.z, end.z) }
             val updated = compress(sorted)
-            val bearing = findBearingBlocks(updated)
+            val bearing = findCriticalBlocks(updated)
             updated.size - bearing.size
         }
         verify {
@@ -42,49 +43,62 @@ fun main() {
             }
             val updated = compress(init.sortedBy<Block, Int> { (start, end) -> min(start.z, end.z) })
 
-            val bearing = findBearingBlocks(updated)
+            val critical = findCriticalBlocks(updated)
 
             val pointToBlockMap = updated.flatMap { block -> block.range.map { it to block } }.toMap()
-            // calculate a map of a block and all who directly depend on it
-            val blockIsBearing = mutableMapOf<Block, MutableList<Block>>()
-            val blockRestingOn = mutableMapOf<Block, List<Block>>()
+            val blockUpheldBy = mutableMapOf<Block, Set<Block>>()
+            val blockUpholding = mutableMapOf<Block, Set<Block>>()
             updated.forEach { block ->
                 val restingOn = block.bottom.map { it.copy(z = it.z - 1) }
                 val restingPoints = restingOn
                     .mapNotNull { pointToBlockMap[it] }
                     .distinct()
 
-                blockRestingOn[block] = restingPoints
-
+                blockUpheldBy[block] = restingPoints.toSet()
                 restingPoints.forEach { bear ->
-                    val list = blockIsBearing.getOrPut(bear) { mutableListOf() }
-                    list.add(block)
+                    blockUpholding.merge(bear, setOf(block)) { a, b -> a + b }
                 }
             }
+            blockUpholding.map { it.key.letter to it.value.map { it.letter } } log "upholding "
+            blockUpheldBy.map { it.key.letter to it.value.map { it.letter } } log "upheld by "
 
-            bearing.sumOf { bear ->
-                println("bear: ${bear.letter}")
-                val list = bear.above.mapNotNull { point -> pointToBlockMap[point] }
-                val queue = ArrayDeque<Block>()
-                val visited = mutableSetOf(bear)
-                visited += list
-                queue += list
-                while (queue.isNotEmpty()) {
-                    val b = queue.removeFirst()
-                    println("checking: ${b.letter}")
-                    b.above
-                        .mapNotNull { point -> pointToBlockMap[point] }
-                        .filter { it !in visited }
-                        .forEach { next ->
-                            val test = blockRestingOn.getValue(next).filter { it !in visited }
-                            if (test.size == 0) {
-                                queue += next
+            var total = 0
+            updated.forEach { b ->
+                val q = ArrayDeque<Block>()
+                q += (blockUpholding.get(b) ?: emptySet()).filter {
+                    (blockUpheldBy[it] ?: emptySet()).size == 1
+                }
+                println("START ${b.letter} adding ${q.map { it.letter }} to queue")
+
+                val falling = mutableSetOf(b)
+                falling += q
+
+                while (q.isNotEmpty()) {
+                    val j = q.removeFirst()
+                    println("${j.letter} checking")
+
+                    val blocks = blockUpholding[j] ?: emptySet()
+                    blocks
+                        .also {
+                            val upholding = it.map { it.letter }
+                            println("${j.letter} holding up $upholding")
+                        }
+                        .filter { it !in falling }
+                        .forEach {
+                            val filter = blockUpheldBy.getValue(it).filter { it !in falling }
+                            if (filter.isEmpty()) {
+                                println("${it.letter} now falling adding to queue")
+                                q += it
+                                falling += it
+                            } else {
+                                println("${it.letter} not falling ${filter.size}")
                             }
-                            visited += next
                         }
                 }
-                (visited - bear).size
-            }.log("sum")
+                total += falling.size - 1
+                println("new total $total new:${falling.size - 1}")
+            }
+            total
         }
         verify {
             expect result null
@@ -126,7 +140,7 @@ private fun compress(sorted: List<Block>): List<Block> {
     return updated
 }
 
-private fun findBearingBlocks(updated: List<Block>): MutableSet<Block> {
+private fun findCriticalBlocks(updated: List<Block>): MutableSet<Block> {
     val pointToBlockMap = updated.flatMap { block -> block.range.map { it to block } }.toMap()
     val vital = mutableSetOf<Block>()
     updated.forEach { block ->
