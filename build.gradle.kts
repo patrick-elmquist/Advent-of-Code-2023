@@ -1,20 +1,15 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.9.20"
+    kotlin("jvm") version "1.9.21"
 }
-
-group = "dev.patrickelmquist"
-version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
 }
 
 kotlin {
-    jvmToolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
-    }
+    jvmToolchain(21)
 }
 
 dependencies {
@@ -22,6 +17,11 @@ dependencies {
     implementation("io.ktor:ktor-client-java:2.3.6")
     implementation("io.ktor:ktor-client-logging-jvm:2.3.6")
     implementation("ch.qos.logback:logback-classic:1.4.11")
+    testImplementation(kotlin("test"))
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 tasks.withType<KotlinCompile> {
