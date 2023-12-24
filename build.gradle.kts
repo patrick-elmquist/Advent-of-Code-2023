@@ -9,11 +9,13 @@ repositories {
 }
 
 kotlin {
-    jvmToolchain(21)
+    jvmToolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.20")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.21")
     implementation("io.ktor:ktor-client-java:2.3.6")
     implementation("io.ktor:ktor-client-logging-jvm:2.3.6")
     implementation("ch.qos.logback:logback-classic:1.4.11")
