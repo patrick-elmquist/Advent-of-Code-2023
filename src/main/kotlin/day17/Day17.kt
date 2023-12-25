@@ -1,7 +1,7 @@
 package day17
 
 import common.day
-import common.pointCharMap
+import common.grid
 import common.util.*
 import java.util.*
 
@@ -11,7 +11,7 @@ import java.util.*
 fun main() {
     day(n = 17) {
         part1 { input ->
-            val city = input.pointCharMap.mapValues { it.value.digitToInt() }
+            val city = input.grid.mapValues { it.value.digitToInt() }
             val end = Point(x = city.maxOf { it.key.x }, y = city.maxOf { it.key.y })
             val visited = mutableSetOf<Triple<Point, Direction, Int>>()
             val queue = initPriorityQueue(city)
@@ -49,7 +49,7 @@ fun main() {
         }
 
         part2 { input ->
-            val city = input.pointCharMap.mapValues { it.value.digitToInt() }
+            val city = input.grid.mapValues { it.value.digitToInt() }
             val end = Point(x = city.maxOf { it.key.x }, y = city.maxOf { it.key.y })
             val visited = mutableSetOf<Triple<Point, Direction, Int>>()
             val queue = initPriorityQueue(city)

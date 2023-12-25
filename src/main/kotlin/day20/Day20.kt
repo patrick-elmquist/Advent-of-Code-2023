@@ -2,6 +2,7 @@ package day20
 
 import common.Input
 import common.day
+import common.util.arrayDequeOf
 import common.util.leastCommonMultiple
 
 // answer #1: 731517480
@@ -83,8 +84,7 @@ private fun pushButton(
     start: String,
     endCriteria: Pair<String, String>? = null,
 ): State {
-    val queue = ArrayDeque<Triple<String, String, String>>()
-    queue.add(Triple(start, low, ""))
+    val queue = arrayDequeOf(Triple(start, low, ""))
 
     var lows = 1L
     var highs = 0L

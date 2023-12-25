@@ -1,7 +1,7 @@
 package common
 
 import common.util.Point
-import common.util.pointCharMap
+import common.util.grid
 import java.io.File
 
 data class Input(val lines: List<String>) {
@@ -12,11 +12,8 @@ data class Input(val lines: List<String>) {
     companion object
 }
 
-val Input.pointCharMap: Map<Point, Char>
-    get() = lines.pointCharMap
-
 val Input.grid: Map<Point, Char>
-    get() = lines.pointCharMap
+    get() = lines.grid
 
 val Input.bounds: Pair<Int, Int>
     get() = lines.first().length to lines.size

@@ -4,6 +4,7 @@ import common.Input
 import common.day
 import common.util.Point
 import common.util.Point3D
+import common.util.arrayDequeOf
 import common.util.xy
 import kotlin.math.abs
 import kotlin.math.min
@@ -43,7 +44,7 @@ fun main() {
             }
 
             findCriticalBlocks(settledBlocks).sumOf { b ->
-                val queue = ArrayDeque<Block>()
+                val queue = arrayDequeOf<Block>()
                 queue += blockUpholding.getValue(b)
                     .filter { blockStandingOn.getValue(it).size == 1 }
                 val falling = queue.toMutableSet()

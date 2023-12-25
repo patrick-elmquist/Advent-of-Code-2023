@@ -4,6 +4,7 @@ import common.bounds
 import common.day
 import common.grid
 import common.util.Point
+import common.util.arrayDequeOf
 import common.util.neighbors
 
 // answer #1: 3572
@@ -74,8 +75,7 @@ private fun findEndPoints(
     val visited = mutableSetOf(start)
     val possibleEndPoints = mutableSetOf<Point>()
 
-    val queue = ArrayDeque<Pair<Point, Int>>()
-    queue += start to steps
+    val queue = arrayDequeOf(start to steps)
 
     while (queue.isNotEmpty()) {
         val (point, stepsLeft) = queue.removeFirst()

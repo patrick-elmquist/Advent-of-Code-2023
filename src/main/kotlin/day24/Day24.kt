@@ -1,7 +1,7 @@
 package day24
 
 import common.day
-import common.util.LongPoint3D
+import common.util.PointL3D
 import common.util.eq
 import common.util.minus
 import common.util.plus
@@ -16,7 +16,7 @@ fun main() {
         part1 { input ->
             val hail = input.lines.map {
                 it.split(" @ ")
-                    .map { it.split(", ").map { it.trim() } }.map { (x, y, z) -> LongPoint3D(x, y, z) }.let {
+                    .map { it.split(", ").map { it.trim() } }.map { (x, y, z) -> PointL3D(x, y, z) }.let {
                     it.first() to it.last()
                 }
             }
@@ -45,7 +45,7 @@ fun main() {
         part2 { input ->
             val hail = input.lines.map {
                 it.split(" @ ")
-                    .map { it.split(", ").map { it.trim() } }.map { (x, y, z) -> LongPoint3D(x, y, z) }.let {
+                    .map { it.split(", ").map { it.trim() } }.map { (x, y, z) -> PointL3D(x, y, z) }.let {
                         Hail(it.first(), it.last())
                     }
             }
@@ -82,13 +82,13 @@ fun main() {
 }
 
 private data class Hail(
-    val position: LongPoint3D,
-    val velocity: LongPoint3D,
+    val position: PointL3D,
+    val velocity: PointL3D,
 )
 
 private fun intersectInArea(
-    a: Pair<LongPoint3D, LongPoint3D>,
-    b: Pair<LongPoint3D, LongPoint3D>,
+    a: Pair<PointL3D, PointL3D>,
+    b: Pair<PointL3D, PointL3D>,
     xRange: LongRange,
     yRange: LongRange,
 ): Boolean {

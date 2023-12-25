@@ -2,7 +2,7 @@ package day10
 
 import common.Input
 import common.day
-import common.pointCharMap
+import common.grid
 import common.util.Point
 import java.util.PriorityQueue
 import kotlin.math.abs
@@ -69,7 +69,7 @@ fun main() {
 }
 
 private fun parseMapAndStart(input: Input): Pair<Map<Point, Char>, Point> {
-    val map = input.pointCharMap.filter { it.value != '.' }
+    val map = input.grid.filter { it.value != '.' }
     val start = map.entries.single { it.value == 'S' }
     return map to start.key
 }

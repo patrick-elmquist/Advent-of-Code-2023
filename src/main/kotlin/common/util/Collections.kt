@@ -1,12 +1,20 @@
 package common.util
 
+/**
+ * Expose the 6th component for a list
+ */
 operator fun <T> List<T>.component6(): T { return this[5] }
 
-fun <T> arrayDequeOf(vararg values: T): ArrayDeque<T> {
-    return ArrayDeque<T>().apply { addAll(values) }
-}
+/**
+ * Create a ArrayDeque of the given elements or an empty if none provided
+ */
+fun <T> arrayDequeOf(vararg values: T): ArrayDeque<T> =
+    ArrayDeque<T>().apply { addAll(values) }
 
-val List<String>.pointCharMap: Map<Point, Char>
+/**
+ * Create a Point,Char grid from the given Strings
+ */
+val Iterable<String>.grid: Map<Point, Char>
     get() = flatMapIndexed { y, row -> row.mapIndexed { x, c -> Point(x, y) to c } }.toMap()
 
 fun <T> List<String>.mapWithRegex(regex: Regex, transform: (MatchResult.Destructured) -> T): List<T> =

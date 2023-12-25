@@ -11,7 +11,7 @@ fun main() {
     day(n = 3) {
         part1 { input ->
             val (parts, symbols) = parsePartsAndSymbols(input)
-            parts.filter { part -> part.neighbors.any { symbols.containsKey(it) } }
+            parts.filter { part -> part.neighbors.any { it in symbols } }
                 .sumOf(Part::value)
         }
         verify {

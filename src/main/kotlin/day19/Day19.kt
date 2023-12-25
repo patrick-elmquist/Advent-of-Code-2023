@@ -1,6 +1,7 @@
 package day19
 
 import common.day
+import common.util.arrayDequeOf
 import common.util.sliceByBlank
 
 // answer #1: 391132
@@ -34,8 +35,7 @@ fun main() {
             }
 
             val acceptedRanges = mutableListOf<PartRange>()
-            val queue = ArrayDeque<Pair<String, PartRange>>()
-            queue += "in" to PartRange()
+            val queue = arrayDequeOf("in" to PartRange())
 
             while (queue.isNotEmpty()) {
                 val (name, range) = queue.removeFirst()

@@ -18,8 +18,8 @@ fun main() {
                 .map { (edge, _) -> edge }
 
             for (i in sortedEdges.indices) {
-                for (j in i + 1..<sortedEdges.size) {
-                    for (k in j + 1..<sortedEdges.size) {
+                for (j in i + 1..sortedEdges.lastIndex) {
+                    for (k in j + 1..sortedEdges.lastIndex) {
                         val severedGraph = graph.cutEdges(sortedEdges[i], sortedEdges[j], sortedEdges[k])
                         val size = countSubGraphSize(severedGraph, start = graph.keys.first())
                         // assumes graph can at most be split in two

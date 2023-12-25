@@ -8,6 +8,8 @@ import com.microsoft.z3.IntExpr
 import com.microsoft.z3.Model
 import com.microsoft.z3.Status
 
+// From: https://github.com/madisp/aoc_kotlin/blob/main/lib/src/main/kotlin/utils/z3.kt
+
 interface Z3Expr {
     val ctx: Context
     val expr: Expr<out ArithSort>

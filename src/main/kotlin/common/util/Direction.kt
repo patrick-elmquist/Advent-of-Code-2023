@@ -2,6 +2,14 @@ package common.util
 
 enum class Direction { Left, Up, Right, Down }
 
+val Direction.opposite
+    get() = when (this) {
+        Direction.Left -> Direction.Right
+        Direction.Up -> Direction.Down
+        Direction.Right -> Direction.Left
+        Direction.Down -> Direction.Up
+    }
+
 val Direction.isHorizontal
     get() = this == Direction.Left || this == Direction.Right
 

@@ -1,7 +1,7 @@
 package day16
 
 import common.day
-import common.pointCharMap
+import common.grid
 import common.util.*
 
 // answer #1: 7067
@@ -13,7 +13,7 @@ fun main() {
     day(n = 16) {
         part1 { input ->
             countEnergizedTiles(
-                map = input.pointCharMap,
+                map = input.grid,
                 origin = Point(0, 0) to Direction.Right,
             )
         }
@@ -23,7 +23,7 @@ fun main() {
         }
 
         part2 { input ->
-            val map = input.pointCharMap
+            val map = input.grid
             val points = map.keys
             val lastRowIndex = input.lines.lastIndex
             val lastColIndex = input.lines.first().lastIndex

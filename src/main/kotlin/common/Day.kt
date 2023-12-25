@@ -5,6 +5,8 @@ package common
 import kotlinx.coroutines.runBlocking
 import kotlin.time.measureTimedValue
 
+typealias Solver = (Input) -> Any?
+
 fun day(
     n: Int,
     block: Sheet.() -> Unit
@@ -23,19 +25,23 @@ private inline fun collectSolutions(
 
 private inline fun Sheet.verifyAndRun(input: Input) {
     println("Day $day")
-    parts.forEach { part ->
-        val expected = when (part.partId) {
-            PartId.One -> expectPart1
-            PartId.Two -> expectPart2
+    val hasTests = parts.any { it.config.tests.isNotEmpty() }
+    parts.forEachIndexed { i, (solution, config) ->
+        val n = i + 1
+
+        if (config.ignore) {
+            println("[IGNORING] Part $n")
+            return@forEachIndexed
         }
 
-        val result = part.evaluate(
+        val result = solution.evaluate(
+            n = n,
             input = input,
-            expected = expected,
-            testOnly = breakAfterTest,
-            tests = tests.filter { it.partId == part.partId }
+            expected = config.expected,
+            testOnly = config.breakAfterTest,
+            tests = config.tests,
         )
-        print("answer #${part.number}: ")
+        print("answer #$n: ")
         result
             .onSuccess {
                 println("${it.output} (${it.time.inWholeMilliseconds}ms)")
@@ -43,17 +49,18 @@ private inline fun Sheet.verifyAndRun(input: Input) {
             .onFailure {
                 println(it.message)
             }
-        if (tests.isNotEmpty()) println()
+        if (hasTests) println()
     }
 }
 
-private inline fun Part.evaluate(
+private inline fun Solver.evaluate(
+    n: Int,
     input: Input,
     expected: Any?,
     testOnly: Boolean,
     tests: List<Test>
 ): Result<Answer> {
-    if (tests.isNotEmpty()) println("Verifying Part #${number}")
+    if (tests.isNotEmpty()) println("Verifying Part #$n")
 
     val testsPassed = tests.all {
         val testInput = it.input
@@ -88,8 +95,8 @@ private inline fun Part.evaluate(
     }
 }
 
-private inline fun Part.runWithTimer(input: Input) =
-    measureTimedValue { algorithm(input) }
+private inline fun Solver.runWithTimer(input: Input) =
+    measureTimedValue { invoke(input) }
         .let { result -> Answer(result.value, result.duration) }
 
 private inline fun success(answer: Answer) = Result.success(answer)

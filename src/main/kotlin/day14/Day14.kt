@@ -1,7 +1,7 @@
 package day14
 
 import common.day
-import common.pointCharMap
+import common.grid
 import common.util.Point
 
 // answer #1: 108813
@@ -10,7 +10,7 @@ import common.util.Point
 fun main() {
     day(n = 14) {
         part1 { input ->
-            val map = input.pointCharMap.toMutableMap()
+            val map = input.grid.toMutableMap()
             val height = input.lines.size
             map.tilt(direction = Direction.North)
             calculateValue(map, height)
@@ -21,7 +21,7 @@ fun main() {
         }
 
         part2 { input ->
-            val map = input.pointCharMap.toMutableMap()
+            val map = input.grid.toMutableMap()
             val height = input.lines.size
             val seenStates = mutableListOf<Pair<Int, Int>>()
             val n = 1_000_000_000
