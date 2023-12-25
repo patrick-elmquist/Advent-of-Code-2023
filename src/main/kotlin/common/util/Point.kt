@@ -14,6 +14,15 @@ data class Point(val x: Int, val y: Int) {
     companion object
 }
 
+data class LongPoint(val x: Long, val y: Long) {
+    constructor(x: String, y: String) : this(x.toLong(), y.toLong())
+
+    operator fun plus(point: LongPoint) = LongPoint(x + point.x, y + point.y)
+    operator fun minus(point: LongPoint) = LongPoint(x - point.x, y - point.y)
+
+    companion object
+}
+
 data class Point3D(val x: Int, val y: Int, val z: Int) {
     constructor(x: String, y: String, z: String) : this(x.toInt(), y.toInt(), z.toInt())
 
@@ -22,6 +31,18 @@ data class Point3D(val x: Int, val y: Int, val z: Int) {
 
     companion object
 }
+
+data class LongPoint3D(val x: Long, val y: Long, val z: Long) {
+    constructor(x: String, y: String, z: String) : this(x.toLong(), y.toLong(), z.toLong())
+
+    operator fun plus(point: LongPoint3D) = LongPoint3D(x + point.x, y + point.y, z + point.z)
+    operator fun minus(point: LongPoint3D) = LongPoint3D(x - point.x, y - point.y, z - point.z)
+
+    companion object
+}
+
+val LongPoint3D.xy: LongPoint
+    get() = LongPoint(x = x, y = y)
 
 val Point3D.xy: Point
     get() = Point(x = x, y = y)

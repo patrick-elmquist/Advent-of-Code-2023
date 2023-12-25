@@ -1,6 +1,6 @@
 package common.util
 
-import common.Input
+operator fun <T> List<T>.component6(): T { return this[5] }
 
 val List<String>.pointCharMap: Map<Point, Char>
     get() = flatMapIndexed { y, row -> row.mapIndexed { x, c -> Point(x, y) to c } }.toMap()

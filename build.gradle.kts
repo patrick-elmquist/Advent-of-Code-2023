@@ -18,7 +18,9 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.21")
     implementation("io.ktor:ktor-client-java:2.3.6")
     implementation("io.ktor:ktor-client-logging-jvm:2.3.6")
-    implementation("ch.qos.logback:logback-classic:1.4.11")
+    implementation("ch.qos.logback:logback-classic:1.4.12")
+    implementation("tools.aqua:z3-turnkey:4.12.2.1")
+
     testImplementation(kotlin("test"))
 }
 
